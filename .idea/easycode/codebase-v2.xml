@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="com.obiscr.chatgpt.settings.EasyCodeState">
+    <option name="projectFiles" value="$PROJECT_DIR$/src/adapters/mod.rs;/Users/MAC/Thesis/Bank-Communication/src/api/controller.rs;/Users/MAC/Thesis/Bank-Communication/src/api/middleware.rs;/Users/MAC/Thesis/Bank-Communication/src/api/mod.rs;/Users/MAC/Thesis/Bank-Communication/src/api/routes.rs;/Users/MAC/Thesis/Bank-Communication/src/config/connector.rs;/Users/MAC/Thesis/Bank-Communication/src/config/logging.rs;/Users/MAC/Thesis/Bank-Communication/src/config/mod.rs;/Users/MAC/Thesis/Bank-Communication/src/core/mod.rs;/Users/MAC/Thesis/Bank-Communication/src/core/payments.rs;/Users/MAC/Thesis/Bank-Communication/src/core/reconciliation.rs;/Users/MAC/Thesis/Bank-Communication/src/core/virtual_accounts.rs;/Users/MAC/Thesis/Bank-Communication/src/security/auth.rs;/Users/MAC/Thesis/Bank-Communication/src/security/crypto.rs;/Users/MAC/Thesis/Bank-Communication/src/security/mtls.rs;/Users/MAC/Thesis/Bank-Communication/src/main.rs;/Users/MAC/Thesis/Bank-Communication/src/mod.rs" />
+  </component>
+</project>

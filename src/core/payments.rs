@@ -1,4 +1,3 @@
-pub mod payments;
 
 struct Payment {
     amount: f64,

@@ -3,8 +3,8 @@ use tracing_subscriber::{EnvFilter, fmt};
 use tracing_appender::rolling::{Rotation, RollingFileAppender};
 
 pub fn setup_tracing() -> Result<(), Box<dyn std::error::Error>> {
-    // Convert log crate → tracing
-    tracing_log::LogTracer::init()?;
+    // Convert log crate → tracing (không panic nếu đã init)
+    let _ = tracing_log::LogTracer::init();
 
     let filter = EnvFilter::try_from_default_env()
         .unwrap_or_else(|_| EnvFilter::new("info"));
@@ -20,11 +20,14 @@ pub fn setup_tracing() -> Result<(), Box<dyn std::error::Error>> {
         .with_ansi(false)
         .with_writer(non_blocking_file_writer);
 
-    tracing_subscriber::registry()
+    // ============================
+    // SỬA: dùng try_init() → KHÔNG PANIC
+    // ============================
+    let _ = tracing_subscriber::registry()
         .with(filter)
         .with(console_layer)
         .with(file_layer)
-        .init();
+        .try_init();
 
     Ok(())
 }

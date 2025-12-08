@@ -1,23 +1,34 @@
-mod config;
 mod utils;
+mod adapters;
+mod api;
+mod config;
+mod core;
+mod security;
 
 use tracing::{info, error};
 use std::error::Error;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpListener;
 use std::env;
+use crate::utils::logging::setup_tracing;
+use crate::utils::database::establish_conn;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    setup_tracing()?;
 
-    dotenvy::dotenv()?;
-    for( key, value) in env::vars(){
-        println!("{key}:{value}")
+    match establish_conn().await{
+        Ok(pool) => {
+            println!("Connect to DB successfully",);
+        }
+        Err(err) => {
+            eprintln!("Failed to connect: {:?}", err);
+        }
     }
+
     // Initialize logging
     let addr = "127.0.0.1:8887";
     let listener = TcpListener::bind(addr).await?;
-    info!("Listening on {}", addr);
 
     loop {
         let (mut socket, peer) = listener.accept().await?;
