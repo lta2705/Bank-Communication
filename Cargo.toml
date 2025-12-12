@@ -31,3 +31,5 @@ sqlx = { version = "0.8.6", features = ["runtime-tokio", "macros", "postgres"] }
 ring = "0.17.14"
 tracing-log = "0.2.0"
 dotenvy = "0.15.7"
+kafka = "0.10.0"
+rdkafka = "0.38.0"

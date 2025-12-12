@@ -8,8 +8,7 @@ mod security;
 use tracing::{info, error};
 use std::error::Error;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::net::TcpListener;
-use std::env;
+use tokio::net::{TcpListener, TcpStream};
 use crate::utils::logging::setup_tracing;
 use crate::utils::database::establish_conn;
 
