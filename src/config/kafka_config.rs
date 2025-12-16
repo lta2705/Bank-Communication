@@ -1,69 +1,87 @@
-use std::{env, str::FromStr};
-use dotenvy::dotenv;
+use std::env;
+use dotenvy::from_filename;
+use anyhow::{Context, Result};
 
-trait KafkaConfig{
-    fn setup_producer() -> Self {}
-    fn setup_consumer() -> Self {} 
+#[derive(Debug, Clone)]
+pub struct KafkaConfig {
+    // ===== Common =====
+    pub bootstrap_servers: String,
+
+    // ===== Producer =====
+    pub producer_topic: String,
+    pub compression_type: String,
+    pub acks: String,
+    pub retries: i32,
+    pub linger_ms: i32,
+    pub max_in_flight: i32,
+    pub enable_idempotence: bool,
+    pub request_timeout_ms: i32,
+    pub delivery_timeout_ms: i32,
+
+    // ===== Consumer =====
+    pub consumer_topic: String,
+    pub group_id: String,
+    pub enable_auto_commit: bool,
+    pub max_poll_interval_ms: i32,
+    pub session_timeout_ms: i32,
+    pub heartbeat_interval_ms: i32,
+    pub isolation_level: String,
+    pub auto_offset_reset: String,
 }
 
-pub struct KafkaProducer {
-    broker: String,
-    acks: String,
-    retries: i32,
-    enable_idempotence: bool,
-    request_timeout_ms: i32,
-    delivery_timeout_ms: i32,
-    topic: String
-}
+impl KafkaConfig {
+    pub fn from_env() -> Result<Self> {
+        from_filename("../kafka_cfg.env")
+            .context("Failed to load kafka_cfg.env")?;
 
-pub struct KafkaConsumer {
-    broker: String,
-    enable_auto_commit: bool,
-    max_poll_interval: i32,
-    session_timeout_ms: i32,
-    heartbeat_interval_ms: i32,
-    isolation_level: String,
-    auto_offset_reset: String
-}
+        Ok(Self {
+            // ===== Common =====
+            bootstrap_servers: env::var("KAFKA_BOOTSTRAP_SERVERS")
+                .context("KAFKA_BOOTSTRAP_SERVERS is required")?,
 
-fn get_env<T: std::str::FromStr>(key: &str) -> T 
-where <T as FromStr>::Err: std::fmt::Debug, 
-{
-    dotenvy::from_filename("../kafka_cfg.env").expect("Cannot load .env file");
-    
-    let val = env::var(key).unwrap_or_else(|_| panic!("Missing env variable: {}", key));
-    
-    val.parse::<T>().unwrap_or_else(|_| panic!("Invalid type for env variable: {}", key)) 
-}
+            // ===== Producer =====
+            producer_topic: env::var("KAFKA_PRODUCER_TOPIC")
+                .context("KAFKA_PRODUCER_TOPIC is required")?,
+            compression_type: env::var("KAFKA_PRODUCER_COMPRESSION")?,
+            acks: env::var("KAFKA_PRODUCER_ACKS")?,
+            retries: env::var("KAFKA_PRODUCER_RETRIES")?
+                .parse()
+                .context("KAFKA_PRODUCER_RETRIES must be i32")?,
+            linger_ms: env::var("KAFKA_PRODUCER_LINGER_MS")?
+                .parse()
+                .context("KAFKA_PRODUCER_LINGER_MS must be i32")?,
+            max_in_flight: env::var("KAFKA_MAX_IN_FLIGHT")?
+                .parse()
+                .context("KAFKA_MAX_IN_FLIGHT must be i32")?,
+            enable_idempotence: env::var("KAFKA_ENABLE_IDEMPOTENCE")?
+                .parse()
+                .context("KAFKA_ENABLE_IDEMPOTENCE must be bool")?,
+            request_timeout_ms: env::var("KAFKA_REQUEST_TIMEOUT_MS")?
+                .parse()
+                .context("KAFKA_REQUEST_TIMEOUT_MS must be i32")?,
+            delivery_timeout_ms: env::var("KAFKA_DELIVERY_TIMEOUT_MS")?
+                .parse()
+                .context("KAFKA_DELIVERY_TIMEOUT_MS must be i32")?,
 
-impl KafkaConfig for KafkaProducer {
-    fn setup_producer() -> Self {
-        KafkaProducer { 
-            broker: get_env("KAFKA_BOOTSTRAP_SERVERS"), 
-            acks: get_env("KAFKA_PRODUCER_ACKS"), 
-            retries: get_env("KAFKA_PRODUCER_RETRIES"), 
-            enable_idempotence: get_env("KAFKA_PRODUCER_ENABLE_IDEMPOTENCE"), 
-            request_timeout_ms: get_env("KAFKA_PRODUCER_ENABLE_IDEMPOTENCE"), 
-            delivery_timeout_ms: get_env("KAFKA_PRODUCER_ENABLE_IDEMPOTENCE"), 
-            topic: get_env("KAFKA_PRODUCER_ENABLE_IDEMPOTENCE") 
-        }
+            // ===== Consumer =====
+            consumer_topic: env::var("KAFKA_CONSUMER_TOPIC")
+                .context("KAFKA_CONSUMER_TOPIC is required")?,
+            group_id: env::var("KAFKA_CONSUMER_GROUP_ID")?,
+            enable_auto_commit: env::var("KAFKA_ENABLE_AUTO_COMMIT")?
+                .parse()
+                .context("KAFKA_ENABLE_AUTO_COMMIT must be bool")?,
+            max_poll_interval_ms: env::var("KAFKA_MAX_POLL_INTERVAL_MS")?
+                .parse()
+                .context("KAFKA_MAX_POLL_INTERVAL_MS must be i32")?,
+            session_timeout_ms: env::var("KAFKA_SESSION_TIMEOUT_MS")?
+                .parse()
+                .context("KAFKA_SESSION_TIMEOUT_MS must be i32")?,
+            heartbeat_interval_ms: env::var("KAFKA_HEARTBEAT_INTERVAL_MS")?
+                .parse()
+                .context("KAFKA_HEARTBEAT_INTERVAL_MS must be i32")?,
+            isolation_level: env::var("KAFKA_ISOLATION_LEVEL")?,
+            auto_offset_reset: env::var("KAFKA_AUTO_OFFSET_RESET")?,
+        })
     }
 }
 
-impl KafkaConfig for KafkaConsumer  {
-    fn setup_consumer() -> Self {
-        KafkaConsumer { 
-            broker: get_env(""), 
-            topic: get_env(""),
-            enable_auto_commit: get_env(""), 
-            max_poll_interval: get_env(""), 
-            session_timeout_ms: get_env(""), 
-            heartbeat_interval_ms: get_env(""), 
-            isolation_level: get_env(""), 
-            auto_offset_reset: get_env("") }
-    }
-    
-}
-
-
-    
