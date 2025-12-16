@@ -1,9 +1,12 @@
-use crate::{
-    config,
-    utils::{database, connector, kafka_consumer, kafka_producer},
-    api
-};
+use crate::app::{config, core, api, security};
 
-pub async fn build_app() -> anyhow::Result<()> {
+pub fn run() -> Result<(), Box<dyn std::error::Error>> {
+    let db_cfg = DatabaseCfg::new()
+        .map_err(|e| format!("Database configuration error: {}"))?;
     
+    let logger = setup_tracing()?;
+    
+    logger::info
+
+    Ok(())
 }
