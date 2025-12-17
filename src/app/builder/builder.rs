@@ -1,4 +1,4 @@
-use crate::app::{config, core, api, security};
+use crate::app::utils::{connection_handler,kafka_consumer,kafka_producer,logging};
 
 pub fn run() -> Result<(), Box<dyn std::error::Error>> {
     let db_cfg = DatabaseCfg::new()
@@ -6,7 +6,5 @@ pub fn run() -> Result<(), Box<dyn std::error::Error>> {
     
     let logger = setup_tracing()?;
     
-    logger::info
-
     Ok(())
 }
