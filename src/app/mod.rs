@@ -5,3 +5,4 @@ pub mod api;
 pub mod security;
 pub mod utils;
 pub mod adapters;
+pub mod error;

@@ -1,18 +1,12 @@
 mod app;
-mod models;
-
-use tracing::{info, error};
-use std::error::Error;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::net::{TcpListener, TcpStream};
+use app::builder::builder::run;
+use app::utils::logging::setup_tracing;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
-    let builder = app::builder::builder::run();
-    
-    let app = match app {
-    Ok(result) => {
-        
-    }
-    }
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    setup_tracing()?;
+    run().await?;
+    tracing::info!("Application started");
+    Ok(())
 }
+

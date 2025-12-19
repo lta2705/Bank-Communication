@@ -1,4 +1,4 @@
-use crate::config::database_config::DataBaseCfg;
+use crate::app::config::database_config::DataBaseCfg;
 use sqlx::{Error, Pool, Postgres, postgres::PgPoolOptions};
 
 pub async fn establish_conn() -> Result<Pool<Postgres>, Error> {

@@ -7,12 +7,14 @@ edition = "2024"
 actix = "0.13.5"
 actix-web = "4.11.0"
 tokio = { version = "1.48.0", features = ["full"] }
-
+socket2 = { version = "0.5", features = ["all"] }
 # Standard library for parsing 8583
 iso8583 = "0.1.0"
 iso8583_rs = "0.1.10"
 iso20022 = "0.1.9"
 iso20022-common = "1.0.10"
+emv_tlv_parser = "0.1.11"
+tlv_parser = "0.10.0"
 open-payments-iso20022 = "1.0.10"
 quick-xml = { version = "0.38.3", features = ["serde"] }
 serde = { version = "1.0.228", features = ["derive"] }
@@ -31,6 +33,8 @@ sqlx = { version = "0.8.6", features = ["runtime-tokio", "macros", "postgres"] }
 ring = "0.17.14"
 tracing-log = "0.2.0"
 dotenvy = "0.15.7"
-kafka = "0.10.0"
-rdkafka = "0.38.0"
+# rdkafka = "0.38.0"
 zeroize = "1.8.2"
+async-trait = "0.1"
+tokio-native-tls = "0.3"
+native-tls = { version = "0.2", features = ["vendored"] }
