@@ -1,26 +1,48 @@
 use crate::app::error::AppError;
-use crate::app::utils::connection_initializer::ConnectionMode;
-use crate::app::utils::database::establish_conn;
-use crate::app::utils::{connection_initializer::run_server, connection_handler::Connection};
+use crate::app::utils::database::establish_db_conn;
+use crate::app::utils::connection_initializer::{
+    TcpServer, ConnectionMode,
+};
 use crate::app::config::connection_config::ConnAttr;
 use tracing::{info, debug, error, warn};
 
 pub async fn run() -> Result<(), AppError> {
-    establish_conn().await?;
+    
+    // 1. Init DB pool
+    let db_pool = establish_db_conn()
+        .await
+        .map_err(AppError::Database)?;
+
+    info!("Database connection established");
+
+    let db_pool = Arc::new(db_pool);
     
     let conn_cfg = ConnAttr::load_env()
         .map_err(AppError::Config)?;
-    
-    info!("Connection configured: {}, {}", conn_cfg.host, conn_cfg.port);
-    
+
     let tcp_address = format!("{}:{}", conn_cfg.host, conn_cfg.port);
-    info!("{}", tcp_address);
-    
-    let tls_address = format!("{}:{}", conn_cfg.host, conn_cfg.tls_port);
-    
-    let tcp_server = run_server(tcp_address.as_str(), ConnectionMode::Plain);
-    
-    // let tls_server = run_server(tls_address.as_str(), ConnectionMode::Tls(()));
-    
-    return Ok(());
+
+    let tcp_server = TcpServer::new(
+        tcp_address,
+        ConnectionMode::Plain,
+    );
+
+    let tcp_handle = tokio::spawn(async move {
+        tcp_server.start().await
+    });
+
+    info!("Application started");
+
+    tokio::select! {
+        res = tcp_handle => {
+            res
+                .map_err(AppError::TaskJoin)?
+                .map_err(AppError::Io)?;
+        }
+        _ = tokio::signal::ctrl_c() => {
+            info!("Shutdown signal received");
+        }
+    }
+
+    Ok(())
 }

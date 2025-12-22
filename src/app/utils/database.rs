@@ -1,7 +1,7 @@
 use crate::app::config::database_config::DataBaseCfg;
 use sqlx::{Error, Pool, Postgres, postgres::PgPoolOptions};
 
-pub async fn establish_conn() -> Result<Pool<Postgres>, Error> {
+pub async fn establish_db_conn() -> Result<Pool<Postgres>, Error> {
     let db_cfg = DataBaseCfg::new();
 
     let db_url = format!(
