@@ -1,8 +1,6 @@
 use thiserror::Error;
 
-use crate::app::error;
-
-#[derive(Debug,Error)]
+#[derive(Debug, Error)]
 pub enum AppError {
     #[error("database configuration error")]
     Database(sqlx::Error),

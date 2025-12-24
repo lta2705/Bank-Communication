@@ -76,6 +76,14 @@ pub async fn handle_client_logic(
             Ok(Ok(n)) => {
                 info!("Received {} bytes", n);
                 connection.write_data(b"ACK\n").await?;
+                let data = std::str::from_utf8(&buffer[..n]).map_err(|_| {
+                    io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        "invalid UTF-8 data",
+                    )
+                })?;
+                info!("Received data: {}", data);
+                
             }
 
             // timeout OK, read ERROR

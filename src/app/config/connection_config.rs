@@ -20,9 +20,12 @@ impl ConnAttr {
 
         // Helper closure to parse u16 (for ports)
         let get_u16 = |key: &str| {
-            get_var(key)?
-                .parse::<u16>()
-                .map_err(|_| format!("Environment variable '{}' must be a valid port (0-65535)", key))
+            get_var(key)?.parse::<u16>().map_err(|_| {
+                format!(
+                    "Environment variable '{}' must be a valid port (0-65535)",
+                    key
+                )
+            })
         };
 
         // Return the struct wrapped in Ok
