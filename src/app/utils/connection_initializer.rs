@@ -5,6 +5,7 @@ use std::sync::Arc;
 use tokio::{io, time::timeout};
 use tokio::time::Duration;
 use tracing::{info, error, warn};
+use crate::app::service::iso8583_msg_handler::handle_message;
 
 pub enum ConnectionMode {
     Plain,
@@ -64,34 +65,49 @@ impl TcpServer {
 }
 
 pub async fn handle_client_logic(
-    mut connection: Box<dyn Connection + Send>
+    mut connection: Box<dyn Connection + Send>,
 ) -> io::Result<()> {
-    let mut buffer = [0u8; 2048];
+    let mut buffer = [0u8; 4096];
 
     loop {
         match timeout(Duration::from_secs(30), connection.read_data(&mut buffer)).await {
-            // timeout OK, read OK
-            Ok(Ok(0)) => break, // connection closed
-
-            Ok(Ok(n)) => {
-                info!("Received {} bytes", n);
-                connection.write_data(b"ACK\n").await?;
-                let data = std::str::from_utf8(&buffer[..n]).map_err(|_| {
-                    io::Error::new(
-                        io::ErrorKind::InvalidData,
-                        "invalid UTF-8 data",
-                    )
-                })?;
-                info!("Received data: {}", data);
-                
+            // Client closed connection
+            Ok(Ok(0)) => {
+                info!("Client closed connection");
+                break;
             }
 
-            // timeout OK, read ERROR
-            Ok(Err(e)) => return Err(e),
+            // Received data
+            Ok(Ok(n)) => {
+                info!("Received {} bytes", n);
 
-            // timeout EXPIRED
+                // ===== 1. NHẬN RAW EMV (BINARY) =====
+                let raw_emv: Vec<u8> = buffer[..n].to_vec();
+
+                // Log HEX cho debug (KHÔNG dùng cho xử lý)
+                    info!("Received EMV (hex): {}", hex::encode_upper(&raw_emv));
+
+                // ===== 2. XỬ LÝ TOÀN BỘ GIAO DỊCH =====
+                // Parse TLV → build ISO → send bank → wait response
+                let response_bytes = handle_message(&raw_emv)
+                    .await
+                    .map_err(|e| {
+                        io::Error::new(io::ErrorKind::Other, e)
+                    })?;
+
+                // ===== 3. TRẢ RESPONSE TRÊN CÙNG CONNECTION =====
+                connection.write_data(&response_bytes).await?;
+            }
+
+            // Read error
+            Ok(Err(e)) => {
+                error!("Read error: {}", e);
+                return Err(e);
+            }
+
+            // Timeout
             Err(_) => {
-                warn!("Read timeout");
+                warn!("Client read timeout");
                 return Err(io::Error::new(
                     io::ErrorKind::TimedOut,
                     "client read timeout",

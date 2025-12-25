@@ -14,6 +14,7 @@ iso8583_rs = "0.1.10"
 iso20022 = "0.1.9"
 iso20022-common = "1.0.10"
 emv_tlv_parser = "0.1.11"
+hex = "0.4.3"
 tlv_parser = "0.10.0"
 open-payments-iso20022 = "1.0.10"
 quick-xml = { version = "0.38.3", features = ["serde"] }

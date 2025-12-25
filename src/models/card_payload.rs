@@ -8,6 +8,7 @@ pub struct Card {
     pub exp_month: u8,
     pub exp_year: u16,
     pub cvv: String,
-    pub cardholder_name: Option<String>
+    pub cardholder_name: Option<String>,
+    pub card_data: String
 }
 

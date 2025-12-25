@@ -15,7 +15,7 @@ pub async fn run() -> Result<(), AppError> {
 
     info!("Database connection established");
 
-    let db_pool = Arc::new(db_pool);
+    let _ = Arc::new(db_pool);
 
     // 2. Load network config
     let conn_cfg = ConnAttr::load_env()

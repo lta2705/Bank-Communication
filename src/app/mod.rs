@@ -1,6 +1,6 @@
 pub mod builder;
 pub mod config;
-pub mod core;
+pub mod service;
 pub mod api;
 pub mod security;
 pub mod utils;

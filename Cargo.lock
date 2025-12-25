@@ -14,6 +14,7 @@ dependencies = [
  "config",
  "dotenvy",
  "emv_tlv_parser",
+ "hex",
  "iso20022",
  "iso20022-common",
  "iso8583",
