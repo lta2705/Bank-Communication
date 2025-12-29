@@ -13,6 +13,7 @@ pub struct DataBaseCfg {
     pub max_idle_conn: i32,
     pub max_life_time: i32,
     pub idle_timeout: i32,
+    pub acquired_timeout: i32,
 }
 
 impl DataBaseCfg {
@@ -39,7 +40,8 @@ impl DataBaseCfg {
             min_conn: get_env_i32("DB_MIN_CONNECTIONS"),
             max_idle_conn: get_env_i32("DB_MAX_IDLE_CONNECTIONS"),
             max_life_time: get_env_i32("DB_CONNECTION_MAX_LIFETIME"),
-            idle_timeout: get_env_i32("DB_IDLE_TIMEOUT")
+            idle_timeout: get_env_i32("DB_IDLE_TIMEOUT"),
+            acquired_timeout: get_env_i32("DB_ACQUIRED_TIMEOUT"),
         }
     }
 }

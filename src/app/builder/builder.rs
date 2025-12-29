@@ -9,13 +9,13 @@ use tracing::{info, debug, error, warn};
 
 pub async fn run() -> Result<(), AppError> {
     // 1. Init DB pool
-    let db_pool = establish_db_conn()
-        .await
-        .map_err(AppError::Database)?;
+    // let db_pool = establish_db_conn()
+    //     .await
+    //     .map_err(AppError::Database)?;
 
-    info!("Database connection established");
+    // info!("Database connection established");
 
-    let db_pool = Arc::new(db_pool);
+    // let _ = Arc::new(db_pool);
 
     // 2. Load network config
     let conn_cfg = ConnAttr::load_env()

@@ -18,6 +18,7 @@ pub async fn establish_db_conn() -> Result<Pool<Postgres>, Error> {
         .min_connections(db_cfg.min_conn as u32)
         .max_lifetime(std::time::Duration::from_secs(db_cfg.max_life_time as u64))
         .idle_timeout(std::time::Duration::from_secs(db_cfg.idle_timeout as u64))
+        .acquire_timeout(std::time::Duration::from_millis(db_cfg.acquired_timeout as u64))
         .connect(&db_url.as_str())
         .await?;
 
