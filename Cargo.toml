@@ -30,11 +30,11 @@ anyhow = "1.0.100"
 chrono = { version = "0.4.42", features = ["serde"] }
 log = "0.4.29"
 sqlx = { version = "0.8.6", features = ["runtime-tokio", "macros", "postgres"] }
-
+syn = "2.0.113"
 ring = "0.17.14"
 tracing-log = "0.2.0"
 dotenvy = "0.15.7"
-# rdkafka = "0.38.0"
+rdkafka = "0.38.0"
 zeroize = "1.8.2"
 async-trait = "0.1"
 tokio-native-tls = "0.3"
