@@ -5,8 +5,8 @@ pub enum AppError {
     #[error("database configuration error")]
     Database(sqlx::Error),
     
-    #[error("Kafka error: {0}")]
-    Kafka(#[from] rdkafka::error::KafkaError),
+    // #[error("Kafka error: {0}")]
+    // Kafka(#[from] rdkafka::error::KafkaError),
     
     #[error("I/O error")]
     Io(std::io::Error),
