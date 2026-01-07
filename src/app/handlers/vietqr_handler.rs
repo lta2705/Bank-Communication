@@ -9,7 +9,7 @@ use actix_web::{App, HttpResponse, HttpServer, Responder, get, post, web};
 #[post("/create_qr")]
 pub async fn create_qr(req_body: web::Json<VietQrReqDto>, qr_service: web::Data<Arc<VietQrService>>) -> impl Responder {
     let result = qr_service.create_qr(req_body.into_inner()).await;
-    HttpResponse::Ok().body(result)
+    HttpResponse::Ok().json(result)
 }
 
 #[get("/")]

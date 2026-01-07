@@ -12,11 +12,11 @@ use crate::app::utils::connection_initializer::{
     ConnectionMode,
 };
         
-// use crate::app::utils::kafka_consumer::create_consumer;
-// use crate::app::utils::kafka_producer::create_producer;
+use crate::app::utils::kafka_consumer::create_consumer;
+use crate::app::utils::kafka_producer::create_producer;
 
-// use rdkafka::consumer::{Consumer, StreamConsumer};
-// use rdkafka::message::Message;
+use rdkafka::consumer::{Consumer, StreamConsumer};
+use rdkafka::message::Message;
 use crate::models::app_context::AppContext;
 
 pub async fn run() -> Result<(), AppError> {
@@ -33,16 +33,16 @@ pub async fn run() -> Result<(), AppError> {
 
     info!("Kafka config loaded");
 
-    // let kafka_producer = Arc::new(create_producer(&kafka_cfg)
-    //     .map_err(AppError::KafkaConfig)?);
+    let kafka_producer = Arc::new(create_producer(&kafka_cfg)
+        .map_err(AppError::KafkaConfig)?);
 
-    // let kafka_consumer = Arc::new(create_consumer(&kafka_cfg)
-    //     .map_err(AppError::KafkaConfig)?);
+    let kafka_consumer = Arc::new(create_consumer(&kafka_cfg)
+        .map_err(AppError::KafkaConfig)?);
 
     let ctx = AppContext {
         db_pool: db_pool.clone(),
-        // kafka_producer,
-        // kafka_consumer,
+        kafka_producer,
+        kafka_consumer,
     };
 
     // let consumer_handle = {
