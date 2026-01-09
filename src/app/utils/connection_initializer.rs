@@ -37,6 +37,7 @@ impl TcpServer {
 
         loop {
             let (stream, peer) = listener.accept().await?;
+            info!("===> Raw TCP connection detected from: {}", peer);
             let acceptor = tls_acceptor.clone();
 
             tokio::spawn(async move {
@@ -57,7 +58,7 @@ impl TcpServer {
                 };
 
                 if let Err(e) = handle_client_logic(conn).await {
-                    error!("Connection error: {}", e);
+                    error!("Connection error for {}: {}", peer, e);
                 }
             });
         }
@@ -70,51 +71,57 @@ pub async fn handle_client_logic(
     let mut buffer = [0u8; 4096];
 
     loop {
+        // Đợi nhận dữ liệu với timeout 30s
         match timeout(Duration::from_secs(30), connection.read_data(&mut buffer)).await {
-            // Client closed connection
+            // Case 1: Client đóng kết nối chủ động
             Ok(Ok(0)) => {
                 info!("Client closed connection");
                 break;
             }
 
-            // Received data
+            // Case 2: Nhận được byte dữ liệu
             Ok(Ok(n)) => {
-                info!("Received {} bytes", n);
+                info!("Received {} bytes raw", n);
 
-                // ===== 1. NHẬN RAW EMV (BINARY) =====
-                let raw_emv: Vec<u8> = buffer[..n].to_vec();
+                // --- Bước 1: Chuyển đổi Bytes sang String (UTF-8) ---
+                let raw_string = String::from_utf8(buffer[..n].to_vec())
+                    .map_err(|e| {
+                        error!("Dữ liệu nhận được không phải UTF-8: {}", e);
+                        io::Error::new(io::ErrorKind::InvalidData, "Invalid UTF-8 sequence")
+                    })?;
 
-                // Log HEX cho debug (KHÔNG dùng cho xử lý)
-                    info!("Received EMV (hex): {}", hex::encode_upper(&raw_emv));
+                // Loại bỏ ký tự thừa như xuống dòng (\n, \r) hoặc khoảng trắng đầu cuối
+                let trimmed_data = raw_string.trim();
+                info!("Processed string: '{}'", trimmed_data);
 
-                // ===== 2. XỬ LÝ TOÀN BỘ GIAO DỊCH =====
-                // Parse TLV → build ISO → send bank → wait response
-                let response_bytes = handle_message(&raw_emv)
+                // --- Bước 2: Xử lý logic nghiệp vụ ---
+                // Hàm handle_message bây giờ nhận vào &str
+                let response_bytes = handle_message(trimmed_data)
                     .await
                     .map_err(|e| {
+                        error!("Business logic error: {}", e);
                         io::Error::new(io::ErrorKind::Other, e)
                     })?;
 
-                // ===== 3. TRẢ RESPONSE TRÊN CÙNG CONNECTION =====
+                // --- Bước 3: Gửi phản hồi (binary) về cho client ---
                 connection.write_data(&response_bytes).await?;
             }
 
-            // Read error
+            // Case 3: Lỗi trong quá trình đọc socket
             Ok(Err(e)) => {
-                error!("Read error: {}", e);
+                error!("Socket read error: {}", e);
                 return Err(e);
             }
 
-            // Timeout
+            // Case 4: Không nhận được gì sau 30s
             Err(_) => {
-                warn!("Client read timeout");
+                warn!("Client read timeout after 30 seconds");
                 return Err(io::Error::new(
                     io::ErrorKind::TimedOut,
-                    "client read timeout",
+                    "Client read timeout",
                 ));
             }
         }
     }
-
     Ok(())
 }

@@ -1,7 +1,6 @@
 use actix_web::{
-    error, get,
-    http::{header::ContentType, StatusCode},
-    App, HttpResponse,
+    App, HttpResponse, error, get,
+    http::{StatusCode, header::ContentType},
 };
 use derive_more::derive::{Display, Error};
 
@@ -30,5 +29,14 @@ impl error::ResponseError for ControllerError {
             ControllerError::BadClientData => StatusCode::BAD_REQUEST,
             ControllerError::Timeout => StatusCode::GATEWAY_TIMEOUT,
         }
+    }
+}
+
+// Convert internal AppError to ControllerError so handlers can `map_err(ControllerError::from)`
+impl From<crate::app::error::AppError> for ControllerError {
+    fn from(_: crate::app::error::AppError) -> Self {
+        // For now map all internal errors to InternalError.
+        // Extend this mapping if you want finer-grained HTTP responses per AppError variant.
+        ControllerError::InternalError
     }
 }

@@ -1,13 +1,15 @@
 mod app;
-mod models;
 mod dto;
+mod models;
 
 use std::sync::Arc;
 
+use crate::app::{
+    handlers::vietqr_handler::create_qr, service::qr_transaction_service::VietQrService,
+};
 use actix_web::{App, HttpServer, web};
 use app::builder::builder::run;
 use app::utils::logging::setup_tracing;
-use crate::app::{handlers::vietqr_handler::{create_qr, index}, service::qr_transaction_service::VietQrService};
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -19,7 +21,7 @@ async fn main() -> std::io::Result<()> {
             tracing::error!("Core application crashed: {:?}", e);
         }
     });
-    
+
     let qr_service = Arc::new(VietQrService::new());
 
     // Run HTTP server
@@ -31,7 +33,7 @@ async fn main() -> std::io::Result<()> {
     .bind(("0.0.0.0", 8081))?
     .run();
 
-    tracing::info!("HTTP server started on 0.0.0.0:8080");
+    tracing::info!("HTTP server started on 0.0.0.0:8081");
 
     // 3. Orchestrate lifecycle
     tokio::select! {
