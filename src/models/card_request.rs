@@ -1,0 +1,74 @@
+use serde::{Deserialize, Serialize};
+
+/// Represents the incoming TCP message from terminal
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct CardRequest {
+    pub msg_type: String,
+    pub trm_id: String,
+    pub status: String,
+    pub amount: String,
+    pub transaction_id: String,
+    #[serde(default)]
+    pub card_data: Option<String>, // This is a JSON string that needs to be parsed
+}
+
+/// Parsed card data from the cardData field
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct CardData {
+    pub emv_data: EmvData,
+}
+
+/// EMV data containing DE55 TLV
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct EmvData {
+    pub de55: String,
+    pub de55_length: Option<u32>,
+}
+
+impl CardRequest {
+    /// Parse the cardData JSON string into CardData struct
+    pub fn parse_card_data(&self) -> Result<Option<CardData>, serde_json::Error> {
+        match &self.card_data {
+            Some(card_data_str) => {
+                let parsed: CardData = serde_json::from_str(card_data_str)?;
+                Ok(Some(parsed))
+            }
+            None => Ok(None),
+        }
+    }
+
+    /// Get DE55 hex string from nested cardData
+    pub fn get_de55(&self) -> Result<Option<String>, serde_json::Error> {
+        match self.parse_card_data()? {
+            Some(card_data) => Ok(Some(card_data.emv_data.de55)),
+            None => Ok(None),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_card_request() {
+        let json = r#"{
+            "msgType": "2",
+            "trmId": "TERM_0001",
+            "status": "PROCESSING",
+            "amount": "11000.00",
+            "transactionId": "idlt3455338",
+            "cardData": "{\"emvData\":{\"de55\":\"4F05A000000003820200005A0841111111111111115F200D4E475559454E20564F2056414E5F24032612315F2A0207045F300202019A032601099C01009F02060000011000009F1A0207049F1E085445524D5F3030309F21030545059F360200019F100706010A03000000\",\"de55Length\":107}}"
+        }"#;
+
+        let request: CardRequest = serde_json::from_str(json).unwrap();
+        assert_eq!(request.msg_type, "2");
+        assert_eq!(request.trm_id, "TERM_0001");
+
+        let card_data = request.parse_card_data().unwrap().unwrap();
+        assert!(card_data.emv_data.de55.starts_with("4F05"));
+    }
+}

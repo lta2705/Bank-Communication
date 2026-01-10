@@ -23,6 +23,7 @@ dependencies = [
  "iso8583_rs",
  "log 0.4.29",
  "native-tls",
+ "once_cell",
  "open-payments-iso20022",
  "quick-xml 0.38.3",
  "rdkafka",
