@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::{
     app::{
-        handlers::handler_error::ControllerError, service::qr_transaction_service::VietQrService,
+        handlers::handler_error::ControllerError, service::pay_os_service::VietQrService,
     },
     dto::vietqr_req_dto::VietQrReqDto,
 };

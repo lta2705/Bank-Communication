@@ -1,6 +1,6 @@
 use serde::{Serialize, Deserialize};
 
-use crate::models::vietqr_req::VietQrReq;
+use crate::models::payos_qr_req::VietQrReq;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

@@ -5,7 +5,7 @@ mod models;
 use std::sync::Arc;
 
 use crate::app::{
-    handlers::vietqr_handler::create_qr, service::qr_transaction_service::VietQrService,
+    handlers::pay_os_qr_handler::create_qr, service::pay_os_service::VietQrService,
 };
 use actix_web::{App, HttpServer, web};
 use app::builder::builder::run;
