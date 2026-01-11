@@ -1,3 +1,2 @@
-
-pub mod vietqr_req_dto;
-pub mod vietqr_resp_dto;
+pub mod qr_req_dto;
+pub mod qr_resp_dto;

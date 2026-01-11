@@ -1,20 +1,20 @@
 use std::sync::Arc;
 
 use crate::{
-    app::{
-        handlers::handler_error::ControllerError, service::pay_os_service::VietQrService,
-    },
-    dto::vietqr_req_dto::VietQrReqDto,
+    app::{handlers::handler_error::ControllerError, service::pay_os_service::PayOsQrService}, dto::qr_req_dto::QrReqDto
 };
 use actix_web::{HttpResponse, Responder, get, post, web};
+use tracing::info;
 
 #[post("/create_qr")]
 pub async fn create_qr(
-    req_body: web::Json<VietQrReqDto>,
-    qr_service: web::Data<Arc<VietQrService>>,
+    req_body: web::Json<QrReqDto>,
+    qr_service: web::Data<Arc<PayOsQrService>>,
 ) -> Result<impl Responder, ControllerError> {
-    // Service now returns Result<VietQrRespDto, AppError>; map errors to ControllerError
-    let result = qr_service
+    // Obtain a reference to the inner service and call its async method
+    let svc: &PayOsQrService = qr_service.get_ref().as_ref();
+    info!("Creating PayOs QR transaction");
+    let result = svc
         .create_qr(req_body.into_inner())
         .await
         .map_err(ControllerError::from)?;
@@ -23,5 +23,5 @@ pub async fn create_qr(
 
 #[get("/")]
 async fn index() -> Result<&'static str, ControllerError> {
-    Ok("VietQR Service up")
+    Ok("PayOs QR Service up")
 }

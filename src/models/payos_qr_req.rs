@@ -45,7 +45,7 @@ pub enum PayOsTaxPercent {
 #[serde(rename_all = "camelCase")]
 pub struct PayOsQrReq {
     pub order_code: String,
-    pub amount: i64, // Tổng tiền (VND)
+    pub amount: i32, // Tổng tiền (VND)
     pub description: String,
 
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -79,4 +79,27 @@ pub struct PayOsQrReq {
     pub expired_at: i64,
 
     pub signature: String,
+}
+impl PayOsQrReq {
+    pub fn new() -> Self {
+        PayOsQrReq {
+            order_code: String::new(),
+            amount: 0,
+            description: String::new(),
+            buyer_name: None,
+            buyer_email: None,
+            buyer_company_name: None,
+            buyer_phone: None,
+            buyer_address: None,
+            buyer_tax_code: None,
+            items: None,
+            return_url: String::new(),
+            cancel_url: String::new(),
+            invoice: None,
+            expired_at: 0,
+            signature: String::new(),
+        }
+    }
+    
+    
 }
