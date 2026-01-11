@@ -292,6 +292,11 @@ impl ParsedEmvData {
         self.elements.get("5A").map(|e| e.value_bcd())
     }
 
+    /// Get value by tag as hex string
+    pub fn get_value(&self, tag: &str) -> Option<String> {
+        self.elements.get(tag).map(|e| e.value_hex())
+    }
+
     /// Get Cardholder Name - Tag 5F20
     pub fn get_cardholder_name(&self) -> Option<String> {
         self.elements.get("5F20").and_then(|e| e.value_ascii())
@@ -362,6 +367,7 @@ impl ParsedEmvData {
     /// Print all parsed elements with descriptions
     pub fn print_summary(&self) {
         info!("=== Parsed EMV Data Summary ===");
+        info!("summary, {:?}", &self.elements);
         for elem in &self.ordered_elements {
             let desc = EmvTags::get_description(&elem.tag);
             info!(
@@ -401,4 +407,3 @@ impl std::fmt::Display for TlvParseError {
 }
 
 impl std::error::Error for TlvParseError {}
-

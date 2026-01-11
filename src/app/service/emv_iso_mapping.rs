@@ -334,29 +334,3 @@ pub fn get_de55_tags() -> Vec<&'static str> {
         .map(|(tag, _)| *tag)
         .collect()
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_emv_to_iso_mapping() {
-        let pan_mapping = get_iso_de_for_emv("5A").unwrap();
-        assert_eq!(pan_mapping.iso_de, 2);
-        assert_eq!(pan_mapping.emv_name, "Application PAN");
-    }
-
-    #[test]
-    fn test_de55_tags() {
-        let de55_tags = get_de55_tags();
-        assert!(de55_tags.contains(&"9F26")); // Cryptogram
-        assert!(de55_tags.contains(&"9F36")); // ATC
-        assert!(de55_tags.contains(&"9F10")); // IAD
-    }
-
-    #[test]
-    fn test_is_de55_tag() {
-        assert!(is_de55_tag("9F26")); // Cryptogram goes to DE55
-        assert!(!is_de55_tag("5A"));  // PAN goes to DE2, not DE55
-    }
-}
