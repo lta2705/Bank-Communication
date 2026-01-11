@@ -1,9 +1,9 @@
 use std::env;
-use std::io;
 
 pub struct ConnAttr {
     pub host: String,
     pub port: u16,
+    #[allow(dead_code)]
     pub tls_port: u16,
 }
 

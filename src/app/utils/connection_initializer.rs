@@ -7,6 +7,7 @@ use tokio::time::Duration;
 use tracing::{info, error, warn};
 use crate::app::handlers::iso8583_msg_handler::handle_message;
 
+#[allow(dead_code)]
 pub enum ConnectionMode {
     Plain,
     Tls(Arc<native_tls::Identity>),
@@ -29,7 +30,7 @@ impl TcpServer {
         let tls_acceptor = match &self.mode {
             ConnectionMode::Tls(identity) => {
                 let acceptor = native_tls::TlsAcceptor::new((**identity).clone())
-                    .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
+                    .map_err(io::Error::other)?;
                 Some(tokio_native_tls::TlsAcceptor::from(acceptor))
             }
             ConnectionMode::Plain => None,
@@ -95,7 +96,7 @@ pub async fn handle_client_logic(
                     .await
                     .map_err(|e| {
                         error!("Business logic error: {}", e);
-                        io::Error::new(io::ErrorKind::Other, e)
+                        io::Error::other(e)
                     })?;
 
                 // --- Bước 3: Send response to client ---

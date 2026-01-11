@@ -1,10 +1,11 @@
 use actix_web::{
-    App, HttpResponse, error, get,
+    HttpResponse, error,
     http::{StatusCode, header::ContentType},
 };
 use derive_more::derive::{Display, Error};
 
 #[derive(Debug, Display, Error)]
+#[allow(dead_code)]
 pub enum ControllerError {
     #[display("internal error")]
     InternalError,

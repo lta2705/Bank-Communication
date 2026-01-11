@@ -5,6 +5,7 @@ use anyhow::{Context, Result};
 #[derive(Debug, Clone)]
 pub struct KafkaConfig {
     pub bootstrap_servers: String,
+    #[allow(dead_code)]
     pub producer_topic: String,
     pub compression_type: String,
     pub acks: String,
@@ -22,6 +23,7 @@ pub struct KafkaConfig {
     pub heartbeat_interval_ms: i32,
     pub isolation_level: String,
     pub auto_offset_reset: String,
+    #[allow(dead_code)]
     pub auto_create_topic: bool
 }
 

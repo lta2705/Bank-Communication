@@ -1,22 +1,36 @@
 use serde_json;
 use std::io;
-use tracing::{debug, error, info, warn};
+use std::sync::Arc;
+use tracing::{error, info};
 
-use crate::app::service::tlv_parser::{ParsedEmvData, TlvParseError};
+use crate::app::service::iso8583_transaction_service::Iso8583TransactionService;
+use crate::app::service::stan_generator::StanGenerator;
+use crate::app::service::tlv_parser::ParsedEmvData;
 use crate::models::card_request::CardRequest;
+use crate::repository::card_transaction_repository::TransactionRepository;
+use sqlx::PgPool;
 
-/// Result of processing a card request
-#[derive(Debug)]
-pub struct ProcessedCardData {
-    pub transaction_id: String,
-    pub terminal_id: String,
-    pub amount: String,
-    pub msg_type: String,
-    pub emv_data: Option<ParsedEmvData>,
+// Global service instances (to be initialized in builder)
+lazy_static::lazy_static! {
+    static ref TRANSACTION_SERVICE: tokio::sync::OnceCell<Arc<Iso8583TransactionService>> =
+        tokio::sync::OnceCell::new();
+}
+
+/// Initialize the transaction service (call this from builder)
+pub async fn init_service(db_pool: Arc<PgPool>) {
+    let stan_generator = Arc::new(StanGenerator::new());
+    let transaction_repo = Arc::new(TransactionRepository::new((*db_pool).clone()));
+    let service = Arc::new(Iso8583TransactionService::new(
+        stan_generator,
+        transaction_repo,
+    ));
+
+    let _ = TRANSACTION_SERVICE.set(service);
+    info!("ISO8583 Transaction Service initialized");
 }
 
 /// Handle incoming TCP message from terminal
-/// Parse JSON, extract cardData -> emvData -> de55, then parse TLV
+/// Parse JSON, process as ISO8583 transaction, return response
 pub async fn handle_message(raw_msg: &str) -> io::Result<Vec<u8>> {
     info!("Received raw message: {:?}", raw_msg);
 
@@ -34,81 +48,33 @@ pub async fn handle_message(raw_msg: &str) -> io::Result<Vec<u8>> {
         card_request.amount
     );
 
-    // Step 2: Extract DE55 from cardData -> emvData -> de55
-    let de55 = match card_request.get_de55() {
-        Ok(Some(de55_str)) => {
-            info!("Extracted DE55 (length={}): {}", de55_str.len(), de55_str);
-            Some(de55_str)
-        }
-        Ok(None) => {
-            warn!("No cardData/DE55 present in message");
-            None
-        }
-        Err(e) => {
-            error!("Failed to parse cardData: {}", e);
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidData,
-                format!("Invalid cardData JSON: {}", e),
-            ));
-        }
-    };
+    // Step 2: Get transaction service
+    let service = TRANSACTION_SERVICE.get().ok_or_else(|| {
+        error!("Transaction service not initialized");
+        io::Error::other("Service not initialized")
+    })?;
 
-    // Step 3: Parse TLV from DE55
-    let emv_data = if let Some(de55_hex) = &de55 {
-        match ParsedEmvData::from_de55(de55_hex) {
-            Ok(parsed) => {
-                // Log parsed EMV data
-                parsed.print_summary();
+    // Step 3: Process transaction through complete ISO8583 flow
+    let response_json = service.process_transaction(&card_request).await?;
 
-                // Log important fields
-                if let Some(pan) = parsed.get_pan() {
-                    info!("PAN: {}", mask_pan(&pan));
-                }
-                if let Some(name) = parsed.get_cardholder_name() {
-                    info!("Cardholder Name: {}", name);
-                }
-                if let Some(expiry) = parsed.get_expiry_date() {
-                    info!("Expiry Date: {}", expiry);
-                }
-                if let Some(amount) = parsed.get_amount() {
-                    info!("EMV Amount: {}", amount);
-                }
-                if let Some(aid) = parsed.get_aid() {
-                    info!("AID: {}", aid);
-                }
-                if let Some(atc) = parsed.get_atc() {
-                    info!("ATC: {}", atc);
-                }
-
-                Some(parsed)
+    // Step 4: Parse EMV data for logging (optional)
+    #[allow(clippy::collapsible_if)]
+    if let Ok(Some(de55_hex)) = card_request.get_de55() {
+        if let Ok(parsed) = ParsedEmvData::from_de55(&de55_hex) {
+            if let Some(pan) = parsed.get_pan() {
+                info!("PAN: {}", mask_pan(&pan));
             }
-            Err(e) => {
-                error!("Failed to parse TLV from DE55: {}", e);
-                None
+            if let Some(aid) = parsed.get_aid() {
+                info!("AID: {}", aid);
             }
         }
-    } else {
-        None
-    };
+    }
 
-    // Step 4: Build processed data structure
-    let processed = ProcessedCardData {
-        transaction_id: card_request.transaction_id.clone(),
-        terminal_id: card_request.trm_id.clone(),
-        amount: card_request.amount.clone(),
-        msg_type: card_request.msg_type.clone(),
-        emv_data,
-    };
+    // Step 5: Return response as JSON bytes
+    let response_str = serde_json::to_string(&response_json)
+        .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
 
-    info!(
-        "Successfully processed card data for transaction: {}",
-        processed.transaction_id
-    );
-
-    // For now, return a success acknowledgment
-    let response = build_ack_response(&card_request);
-
-    Ok(response.into_bytes())
+    Ok(response_str.into_bytes())
 }
 
 /// Mask PAN for logging (show first 6 and last 4 digits)
@@ -119,15 +85,4 @@ fn mask_pan(pan: &str) -> String {
     let first = &pan[..6];
     let last = &pan[pan.len() - 4..];
     format!("{}{}{}", first, "*".repeat(pan.len() - 10), last)
-}
-
-/// Build acknowledgment response
-fn build_ack_response(request: &CardRequest) -> String {
-    serde_json::json!({
-        "status": "RECEIVED",
-        "transactionId": request.transaction_id,
-        "terminalId": request.trm_id,
-        "message": "Transaction data received and parsed successfully"
-    })
-    .to_string()
 }

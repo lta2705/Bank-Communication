@@ -3,6 +3,7 @@ use std::collections::{HashMap, HashSet};
 
 /// Transaction types supported by the system
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[allow(dead_code)]
 pub enum TransactionType {
     /// Purchase transaction (MTI 0200)
     Purchase,
@@ -28,6 +29,7 @@ pub enum TransactionType {
 
 impl TransactionType {
     /// Get ISO8583 MTI for this transaction type
+    #[allow(dead_code)]
     pub fn get_mti(&self) -> &'static str {
         match self {
             TransactionType::Purchase => "0200",
@@ -44,6 +46,7 @@ impl TransactionType {
     }
 
     /// Get Processing Code (DE3) for this transaction type
+    #[allow(dead_code)]
     pub fn get_processing_code(&self) -> &'static str {
         match self {
             TransactionType::Purchase => "000000",
@@ -60,6 +63,7 @@ impl TransactionType {
     }
 
     /// Get EMV Transaction Type (Tag 9C) value
+    #[allow(dead_code)]
     pub fn get_emv_transaction_type(&self) -> u8 {
         match self {
             TransactionType::Purchase => 0x00,
@@ -78,6 +82,7 @@ impl TransactionType {
 
 /// Profile defining required and optional fields for a transaction
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct TransactionProfile {
     pub transaction_type: TransactionType,
     pub name: &'static str,
@@ -95,8 +100,10 @@ pub struct TransactionProfile {
 }
 
 /// Create a HashSet from a list of items
+#[allow(unused_mut)]
 macro_rules! hashset {
     ($($x:expr),* $(,)?) => {{
+        #[allow(unused_mut)]
         let mut set = HashSet::new();
         $(set.insert($x);)*
         set
@@ -104,6 +111,7 @@ macro_rules! hashset {
 }
 
 /// All transaction profiles
+#[allow(dead_code)]
 pub static TRANSACTION_PROFILES: Lazy<HashMap<TransactionType, TransactionProfile>> =
     Lazy::new(|| {
         let mut profiles = HashMap::new();
@@ -392,16 +400,19 @@ pub static TRANSACTION_PROFILES: Lazy<HashMap<TransactionType, TransactionProfil
     });
 
 /// Get transaction profile by type
+#[allow(dead_code)]
 pub fn get_profile(tx_type: TransactionType) -> Option<&'static TransactionProfile> {
     TRANSACTION_PROFILES.get(&tx_type)
 }
 
 /// Get all available transaction profiles
+#[allow(dead_code)]
 pub fn get_all_profiles() -> &'static HashMap<TransactionType, TransactionProfile> {
     &TRANSACTION_PROFILES
 }
 
 /// Validate if all required fields are present for a transaction
+#[allow(dead_code)]
 pub fn validate_transaction_fields(
     tx_type: TransactionType,
     present_iso_des: &HashSet<u8>,
@@ -452,6 +463,7 @@ pub fn validate_transaction_fields(
 
 /// Result of field validation
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct ValidationResult {
     pub is_valid: bool,
     pub missing_iso_des: Vec<u8>,

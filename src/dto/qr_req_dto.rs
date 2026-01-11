@@ -13,8 +13,9 @@ pub struct QrReqDto {
 }
 
 impl QrReqDto {
+    #[allow(dead_code)]
     pub fn new() -> Self {
-        return QrReqDto {
+        QrReqDto {
             transaction_id: String::new(),
             terminal_id: String::new(),
             amount: 0,
@@ -26,7 +27,7 @@ impl QrReqDto {
     
     pub fn validate(&self) -> Result<(), &'static str> {
         if self.amount <= 0 {
-            return Err(&"Amount must be greater than 0");
+            return Err("Amount must be greater than 0");
         }
         Ok(())
     }

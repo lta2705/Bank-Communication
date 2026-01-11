@@ -3,6 +3,7 @@
 
 /// Profile for an ISO8583 message type
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct IsoMessageProfile {
     pub name: &'static str,
     pub mti: &'static str,
@@ -14,6 +15,7 @@ pub struct IsoMessageProfile {
 
 /// EMV Profile containing allowed and mandatory tags
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct EmvProfile {
     pub allowed_tags: &'static [&'static str],
     pub mandatory_tags: &'static [&'static str],
@@ -22,6 +24,7 @@ pub struct EmvProfile {
 // ========================================
 // PURCHASE PROFILE
 // ========================================
+#[allow(dead_code)]
 pub static PURCHASE_EMV_PROFILE: EmvProfile = EmvProfile {
     allowed_tags: &[
         "4F", "50", "57", "5A", "5F20", "5F24", "5F2A", "5F34", "82", "84", "8C", "8D", "8E", "94",
@@ -43,6 +46,7 @@ pub static PURCHASE_EMV_PROFILE: EmvProfile = EmvProfile {
     ],
 };
 
+#[allow(dead_code)]
 pub static PURCHASE_PROFILE: IsoMessageProfile = IsoMessageProfile {
     name: "PURCHASE",
     mti: "0200",
@@ -55,6 +59,7 @@ pub static PURCHASE_PROFILE: IsoMessageProfile = IsoMessageProfile {
 // ========================================
 // CASH WITHDRAWAL PROFILE
 // ========================================
+#[allow(dead_code)]
 pub static CASH_WITHDRAWAL_EMV_PROFILE: EmvProfile = EmvProfile {
     allowed_tags: &[
         "4F", "57", "5A", "5F24", "5F2A", "5F34", "82", "84", "95", "9A", "9C", "9F02", "9F10",
@@ -65,6 +70,7 @@ pub static CASH_WITHDRAWAL_EMV_PROFILE: EmvProfile = EmvProfile {
     ],
 };
 
+#[allow(dead_code)]
 pub static CASH_WITHDRAWAL_PROFILE: IsoMessageProfile = IsoMessageProfile {
     name: "CASH_WITHDRAWAL",
     mti: "0200",
@@ -77,6 +83,7 @@ pub static CASH_WITHDRAWAL_PROFILE: IsoMessageProfile = IsoMessageProfile {
 // ========================================
 // BALANCE INQUIRY PROFILE
 // ========================================
+#[allow(dead_code)]
 pub static BALANCE_INQUIRY_PROFILE: IsoMessageProfile = IsoMessageProfile {
     name: "BALANCE_INQUIRY",
     mti: "0200",
@@ -89,6 +96,7 @@ pub static BALANCE_INQUIRY_PROFILE: IsoMessageProfile = IsoMessageProfile {
 // ========================================
 // REFUND PROFILE
 // ========================================
+#[allow(dead_code)]
 pub static REFUND_PROFILE: IsoMessageProfile = IsoMessageProfile {
     name: "REFUND",
     mti: "0200",
@@ -101,6 +109,7 @@ pub static REFUND_PROFILE: IsoMessageProfile = IsoMessageProfile {
 // ========================================
 // PRE-AUTH PROFILE
 // ========================================
+#[allow(dead_code)]
 pub static PREAUTH_EMV_PROFILE: EmvProfile = EmvProfile {
     allowed_tags: &[
         "4F", "57", "5A", "5F24", "5F2A", "5F34", "82", "84", "95", "9A", "9C", "9F02", "9F10",
@@ -111,6 +120,7 @@ pub static PREAUTH_EMV_PROFILE: EmvProfile = EmvProfile {
     ],
 };
 
+#[allow(dead_code)]
 pub static PREAUTH_PROFILE: IsoMessageProfile = IsoMessageProfile {
     name: "PRE_AUTH",
     mti: "0100",
@@ -123,6 +133,7 @@ pub static PREAUTH_PROFILE: IsoMessageProfile = IsoMessageProfile {
 // ========================================
 // VOID/REVERSAL PROFILE
 // ========================================
+#[allow(dead_code)]
 pub static VOID_PROFILE: IsoMessageProfile = IsoMessageProfile {
     name: "VOID",
     mti: "0400",
@@ -135,6 +146,7 @@ pub static VOID_PROFILE: IsoMessageProfile = IsoMessageProfile {
 // ========================================
 // QR PAYMENT PROFILE
 // ========================================
+#[allow(dead_code)]
 pub static QR_PAYMENT_PROFILE: IsoMessageProfile = IsoMessageProfile {
     name: "QR_PAYMENT",
     mti: "0200",
@@ -145,6 +157,7 @@ pub static QR_PAYMENT_PROFILE: IsoMessageProfile = IsoMessageProfile {
 };
 
 /// Get profile by transaction type string
+#[allow(dead_code)]
 pub fn get_profile_by_type(tr_type: &str) -> Option<&'static IsoMessageProfile> {
     match tr_type.to_uppercase().as_str() {
         "PURCHASE" | "00" => Some(&PURCHASE_PROFILE),
@@ -159,6 +172,7 @@ pub fn get_profile_by_type(tr_type: &str) -> Option<&'static IsoMessageProfile> 
 }
 
 /// List of all available profiles
+#[allow(dead_code)]
 pub static ALL_PROFILES: &[&IsoMessageProfile] = &[
     &PURCHASE_PROFILE,
     &CASH_WITHDRAWAL_PROFILE,

@@ -1,15 +1,16 @@
 use hmac::{Hmac, Mac};
 use sha2::Sha256;
-use tracing::info;
 use std::env;
+use tracing::{error, info};
+
+use reqwest::Client;
+use serde_json;
 
 use crate::{
     app::error::AppError,
     dto::{qr_req_dto::QrReqDto, qr_resp_dto::QrRespDto},
-    models::payos_qr_req::PayOsQrReq,
+    models::{payos_qr_req::PayOsQrReq, payos_qr_resp::PayOsPaymentResponse},
 };
-use reqwest::Client;
-use serde_json;
 
 pub struct PayOsQrService {
     client: Client,
@@ -21,81 +22,155 @@ pub struct PayOsQrService {
 
 impl PayOsQrService {
     pub fn new() -> Self {
-        return PayOsQrService {
-            
+        PayOsQrService {
             client: Client::builder()
                 .timeout(std::time::Duration::from_secs(10))
                 .build()
-                .unwrap(),
+                .expect("Failed to build reqwest client"),
             api_key: env::var("X_API_KEY").expect("X_API_KEY must be set"),
             client_id: env::var("X_CLIENT_ID").expect("X_CLIENT_ID must be set"),
             return_url: env::var("RETURN_URL").expect("RETURN_URL must be set"),
             checksum_key: env::var("CHECKSUM_KEY").expect("CHECKSUM_KEY must be set"),
-        };
+        }
     }
 
     pub async fn create_qr(&self, payload: QrReqDto) -> Result<QrRespDto, AppError> {
-        payload.validate().map_err(AppError::Validation)?;
-        info!("Mapping essential fields");
-        let amount = payload.amount.clone();
-        let order_code = payload.transaction_id.clone();
-        let cancel_url = self.return_url.clone();
-        let description = "DON HANG MOI";
-        let return_url = self.return_url.clone();
-        let checksum_key = self.checksum_key.clone();
+        // 1. Validate input
+        payload
+            .validate()
+            .map_err(|e| AppError::Validation(e.to_string()))?;
 
+        info!(
+            transaction_id = %payload.transaction_id,
+            amount = payload.amount,
+            "Mapping essential fields"
+        );
+
+        // 2. Parse orderCode ONCE (không random, không parse lại)
+        let order_code: i32 = payload
+            .transaction_id
+            .parse()
+            .map_err(|_| AppError::Validation("transaction_id must be numeric".into()))?;
+
+        let amount = payload.amount;
+        let description = "DON HANG MOI";
+        let return_url = self.return_url.as_str();
+        let cancel_url = self.return_url.as_str();
+        // let mut expired_at = chrono::Utc::now().timestamp() + 15 * 60; // 15 phút
+
+        // 3. Create signature (GIỐNG 100% payload gửi đi)
         let signature = create_signature(
             amount,
-            cancel_url.as_str(),
+            cancel_url,
             description,
-            order_code.as_str(),
-            return_url.as_str(),
-            checksum_key.as_str(),
+            // expired_at,
+            &order_code.to_string(),
+            return_url,
+            &self.checksum_key,
         )
         .map_err(AppError::Config)?;
 
+        // 4. Build PayOS request model
         let mut model = PayOsQrReq::new();
+        model.order_code = order_code;
         model.amount = amount;
-        model.order_code = payload.transaction_id;
         model.description = description.to_string();
-        model.cancel_url = self.return_url.clone();
-        model.return_url = self.return_url.clone();
+        // model.expired_at = Some(expired_at as u64);
+        model.return_url = return_url.to_string();
+        model.cancel_url = cancel_url.to_string();
         model.signature = signature;
 
-        // Serialize request body explicitly to avoid relying on reqwest `json` feature.
-        let body =
-            serde_json::to_string(&mut model).map_err(|e| AppError::Config(e.to_string()))?;
-        
-        info!("Creating QR request with payload {:?}", body);
-        
+        info!(
+            order_code = model.order_code,
+            amount = model.amount,
+            "Sending request to PayOS"
+        );
+
+        // 5. Send HTTPS request (KHÔNG serialize thủ công)
+        let body_json =
+            serde_json::to_string(&model).map_err(|e| AppError::Config(e.to_string()))?;
+
+        info!("Body created {:?}", body_json);
         let resp = self
             .client
             .post("https://api-merchant.payos.vn/v2/payment-requests")
-            .header("x-client-id", &self.client_id)
-            .header("x-api-key", &self.api_key)
+            .header("x-client-id", self.client_id.as_str())
+            .header("x-api-key", self.api_key.as_str())
             .header("content-type", "application/json")
-            .body(body)
+            .body(body_json)
             .send()
-            .await? // network error -> AppError
-            .error_for_status()?; // HTTP 4xx/5xx -> AppError
+            .await
+            .map_err(AppError::Http)?;
 
-        // Read response text and parse with serde_json (map serde errors into AppError::Config).
-        let text = resp.text().await?;
-        let parsed: QrRespDto =
-            serde_json::from_str(&text).map_err(|e| AppError::Config(e.to_string()))?;
+        let status = resp.status();
+        info!("Received HTTP response code {}", status);
+        let body = resp.text().await.map_err(AppError::Http)?;
 
-        Ok(parsed)
+        info!("========================================");
+        info!("PayOS HTTP Status: {}", status);
+        info!("PayOS Raw Body: {}", body);
+        info!("========================================");
+
+        // 6. Handle PayOS error explicitly
+        if !status.is_success() {
+            error!(
+                status = %status,
+                body = %body,
+                "PayOS returned error"
+            );
+            return Err(AppError::ExternalService(body));
+        }
+
+        // 7. Parse success response
+        let payos_resp: PayOsPaymentResponse = match serde_json::from_str(&body) {
+            Ok(v) => v,
+            Err(e) => {
+                error!("Serde Parse Error: {} | Raw Body: {}", e, body);
+                return Err(AppError::Config(format!("Parse PayOS JSON failed: {}", e)));
+            }
+        };
+
+        if payos_resp.code != "00" {
+            error!(
+                code = %payos_resp.code,
+                desc = %payos_resp.desc,
+                "PayOS returned business error"
+            );
+            return Err(AppError::ExternalService(format!(
+                "PayOS Error [{}]: {}",
+                payos_resp.code, payos_resp.desc
+            )));
+        }
+
+        let success_data = payos_resp.data.ok_or_else(|| {
+            AppError::ExternalService("PayOS returned success code but data is null".to_string())
+        })?;
+        let response_dto = QrRespDto {
+            response_code: payos_resp.code,
+
+            qr_code: success_data.qr_code,
+
+            transaction_id: success_data.order_code.to_string(),
+
+            pc_pos_id: payload.pc_pos_id.clone(),
+        };
+
+        info!("Mapped payload success: {:?}", response_dto);
+        Ok(response_dto)
     }
 }
 
+/// Create HMAC-SHA256 signature according to PayOS spec
 fn create_signature(
     amount: i32,
     cancel_url: &str,
     description: &str,
+    // expired_at: i64,
     order_code: &str,
     return_url: &str,
     checksum_key: &str,
 ) -> Result<String, String> {
+    // IMPORTANT: thứ tự & key phải đúng tuyệt đối theo PayOS
     let data = format!(
         "amount={}&cancelUrl={}&description={}&orderCode={}&returnUrl={}",
         amount, cancel_url, description, order_code, return_url
@@ -106,9 +181,6 @@ fn create_signature(
 
     mac.update(data.as_bytes());
 
-    // 3. Convert sang hex string
     let result = mac.finalize();
-    let signature_bytes = result.into_bytes();
-
-    Ok(hex::encode(signature_bytes))
+    Ok(hex::encode(result.into_bytes()))
 }

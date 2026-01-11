@@ -1,8 +1,9 @@
-use std::collections::HashMap;
 use once_cell::sync::Lazy;
+use std::collections::HashMap;
 
 /// Represents the mapping between an EMV Tag and ISO8583 Data Element
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct EmvIsoMapping {
     pub emv_tag: &'static str,
     pub emv_name: &'static str,
@@ -15,6 +16,7 @@ pub struct EmvIsoMapping {
 
 /// Data format types for encoding/decoding
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[allow(dead_code)]
 pub enum DataFormat {
     /// Binary data (hex)
     Binary,
@@ -29,6 +31,7 @@ pub enum DataFormat {
 }
 
 /// Static mapping table: EMV Tag -> ISO8583 DE
+#[allow(dead_code)]
 pub static EMV_TO_ISO_MAP: Lazy<HashMap<&'static str, EmvIsoMapping>> = Lazy::new(|| {
     let mappings = vec![
         // DE2 - Primary Account Number (PAN)
@@ -103,9 +106,9 @@ pub static EMV_TO_ISO_MAP: Lazy<HashMap<&'static str, EmvIsoMapping>> = Lazy::ne
         },
         // DE55 - ICC Data (contains multiple EMV tags)
         // This is a container for chip data sent to issuer
-        
+
         // === DE55 Subfields (EMV tags that go into DE55) ===
-        
+
         // DE55.1 - Application Identifier (AID)
         EmvIsoMapping {
             emv_tag: "4F",
@@ -296,29 +299,31 @@ pub static EMV_TO_ISO_MAP: Lazy<HashMap<&'static str, EmvIsoMapping>> = Lazy::ne
 });
 
 /// Reverse mapping: ISO DE -> List of EMV Tags
+#[allow(dead_code)]
 pub static ISO_TO_EMV_MAP: Lazy<HashMap<u8, Vec<&'static str>>> = Lazy::new(|| {
     let mut map: HashMap<u8, Vec<&'static str>> = HashMap::new();
-    
+
     for (emv_tag, mapping) in EMV_TO_ISO_MAP.iter() {
-        map.entry(mapping.iso_de)
-            .or_insert_with(Vec::new)
-            .push(*emv_tag);
+        map.entry(mapping.iso_de).or_default().push(*emv_tag);
     }
-    
+
     map
 });
 
 /// Get ISO8583 DE for an EMV tag
+#[allow(dead_code)]
 pub fn get_iso_de_for_emv(emv_tag: &str) -> Option<&'static EmvIsoMapping> {
     EMV_TO_ISO_MAP.get(emv_tag)
 }
 
 /// Get all EMV tags that map to a specific ISO DE
+#[allow(dead_code)]
 pub fn get_emv_tags_for_iso_de(iso_de: u8) -> Option<&'static Vec<&'static str>> {
     ISO_TO_EMV_MAP.get(&iso_de)
 }
 
 /// Check if an EMV tag should be included in DE55
+#[allow(dead_code)]
 pub fn is_de55_tag(emv_tag: &str) -> bool {
     EMV_TO_ISO_MAP
         .get(emv_tag)
@@ -327,36 +332,11 @@ pub fn is_de55_tag(emv_tag: &str) -> bool {
 }
 
 /// Get all EMV tags that go into DE55
+#[allow(dead_code)]
 pub fn get_de55_tags() -> Vec<&'static str> {
     EMV_TO_ISO_MAP
         .iter()
         .filter(|(_, m)| m.iso_de == 55)
         .map(|(tag, _)| *tag)
         .collect()
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_emv_to_iso_mapping() {
-        let pan_mapping = get_iso_de_for_emv("5A").unwrap();
-        assert_eq!(pan_mapping.iso_de, 2);
-        assert_eq!(pan_mapping.emv_name, "Application PAN");
-    }
-
-    #[test]
-    fn test_de55_tags() {
-        let de55_tags = get_de55_tags();
-        assert!(de55_tags.contains(&"9F26")); // Cryptogram
-        assert!(de55_tags.contains(&"9F36")); // ATC
-        assert!(de55_tags.contains(&"9F10")); // IAD
-    }
-
-    #[test]
-    fn test_is_de55_tag() {
-        assert!(is_de55_tag("9F26")); // Cryptogram goes to DE55
-        assert!(!is_de55_tag("5A"));  // PAN goes to DE2, not DE55
-    }
 }

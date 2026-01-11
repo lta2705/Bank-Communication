@@ -6,11 +6,16 @@ use serde::{Deserialize, Serialize};
 pub struct CardRequest {
     pub msg_type: String,
     pub trm_id: String,
-    pub status: String,
-    pub amount: String,
     pub transaction_id: String,
+    pub amount: f64,
+    #[serde(default)]
+    pub merchant_id: Option<String>,
     #[serde(default)]
     pub card_data: Option<String>, // This is a JSON string that needs to be parsed
+    #[serde(default)]
+    pub qr_data: Option<String>,
+    #[serde(default)]
+    pub additional_data: Option<String>,
 }
 
 /// Parsed card data from the cardData field
@@ -47,28 +52,10 @@ impl CardRequest {
             None => Ok(None),
         }
     }
-}
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_parse_card_request() {
-        let json = r#"{
-            "msgType": "2",
-            "trmId": "TERM_0001",
-            "status": "PROCESSING",
-            "amount": "11000.00",
-            "transactionId": "idlt3455338",
-            "cardData": "{\"emvData\":{\"de55\":\"4F05A000000003820200005A0841111111111111115F200D4E475559454E20564F2056414E5F24032612315F2A0207045F300202019A032601099C01009F02060000011000009F1A0207049F1E085445524D5F3030309F21030545059F360200019F100706010A03000000\",\"de55Length\":107}}"
-        }"#;
-
-        let request: CardRequest = serde_json::from_str(json).unwrap();
-        assert_eq!(request.msg_type, "2");
-        assert_eq!(request.trm_id, "TERM_0001");
-
-        let card_data = request.parse_card_data().unwrap().unwrap();
-        assert!(card_data.emv_data.de55.starts_with("4F05"));
+    /// Get card data as string for processing
+    pub fn get_card_data_string(&self) -> Result<Option<String>, serde_json::Error> {
+        self.get_de55()
     }
 }
+

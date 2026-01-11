@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 /// ----------------------
 /// Item
@@ -44,7 +44,7 @@ pub enum PayOsTaxPercent {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PayOsQrReq {
-    pub order_code: String,
+    pub order_code: i32,
     pub amount: i32, // Tổng tiền (VND)
     pub description: String,
 
@@ -74,16 +74,17 @@ pub struct PayOsQrReq {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub invoice: Option<String>,
-
-    /// Unix timestamp (seconds)
-    pub expired_at: i64,
+    
+    //Unix timestamp
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub expired_at: Option<u64>,
 
     pub signature: String,
 }
 impl PayOsQrReq {
     pub fn new() -> Self {
         PayOsQrReq {
-            order_code: String::new(),
+            order_code: rand::random::<i32>().abs(),
             amount: 0,
             description: String::new(),
             buyer_name: None,
@@ -96,10 +97,8 @@ impl PayOsQrReq {
             return_url: String::new(),
             cancel_url: String::new(),
             invoice: None,
-            expired_at: 0,
+            expired_at: None,
             signature: String::new(),
         }
     }
-    
-    
 }

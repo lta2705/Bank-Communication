@@ -1,39 +1,36 @@
-use std::{collections::HashMap, iter::Map};
+use crate::app::service::transaction_profile::TransactionType;
 
-#[derive(Debug, Copy, Clone)]
-pub enum IsoMsgType {
-    Purchase, // 0200
-    PurchaseAdvice, // 0220
-    Void, // 0200 with another processing code
-    Reversal, // 0400
-    Network, // 0800
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[allow(dead_code)]
+pub enum TcpTransactionType {
+    Sale,
+    Void,
+    Reversal,
+    Qr,
 }
 
-impl IsoMsgType {
-    pub fn make_mti(transaction_type: &str) -> String {
-        match transaction_type {
-            "SALE" => "0200".to_string(),
-            "VOID" => "0200".to_string(),
-            "REVERSAL" => "0400".to_string(),
-            "NETWORK" => "0800".to_string(),
-            _ => "0000".to_string(),
+impl TryFrom<&str> for TcpTransactionType {
+    type Error = String;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        match value.to_uppercase().as_str() {
+            "SALE" => Ok(TcpTransactionType::Sale),
+            "VOID" => Ok(TcpTransactionType::Void),
+            "REVERSAL" => Ok(TcpTransactionType::Reversal),
+            "QR" => Ok(TcpTransactionType::Qr),
+            _ => Err(format!("Unsupported TCP transactionType: {}", value)),
         }
     }
 }
 
-#[derive(Debug)]
-pub struct Iso8583Message {
-    pub mti: String,
-    pub bitmap: String,
-    pub fields: HashMap<u8, String>,
-}
-
-impl Iso8583Message {
-    pub fn new() -> Self {
-        Iso8583Message {
-            mti: String::new(),
-            bitmap: String::new(),
-            fields: HashMap::new(),
+impl TcpTransactionType {
+    #[allow(dead_code)]
+    pub fn to_internal(self) -> TransactionType {
+        match self {
+            TcpTransactionType::Sale => TransactionType::Purchase,
+            TcpTransactionType::Void => TransactionType::Void,
+            TcpTransactionType::Reversal => TransactionType::Reversal,
+            TcpTransactionType::Qr => TransactionType::QrPayment,
         }
     }
 }

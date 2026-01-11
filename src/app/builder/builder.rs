@@ -1,7 +1,7 @@
 
 use std::sync::Arc;
 
-use tracing::{info, error};
+use tracing::info;
 
 use crate::app::config::kafka_config::KafkaConfig;
 use crate::app::config::connection_config::ConnAttr;
@@ -11,12 +11,11 @@ use crate::app::utils::connection_initializer::{
     TcpServer,
     ConnectionMode,
 };
+use crate::app::handlers::iso8583_msg_handler;
         
 use crate::app::utils::kafka_consumer::create_consumer;
 use crate::app::utils::kafka_producer::create_producer;
 
-use rdkafka::consumer::{Consumer, StreamConsumer};
-use rdkafka::message::Message;
 use crate::models::app_context::AppContext;
 
 pub async fn run() -> Result<(), AppError> {
@@ -27,6 +26,10 @@ pub async fn run() -> Result<(), AppError> {
 
     let db_pool = Arc::new(db_pool);
     info!("Database connection established");
+
+    // Initialize ISO8583 transaction service
+    iso8583_msg_handler::init_service(db_pool.clone()).await;
+    info!("ISO8583 transaction service initialized");
 
     let kafka_cfg = KafkaConfig::from_env()
         .map_err(AppError::KafkaConfig)?;
@@ -39,7 +42,7 @@ pub async fn run() -> Result<(), AppError> {
     let kafka_consumer = Arc::new(create_consumer(&kafka_cfg)
         .map_err(AppError::KafkaConfig)?);
 
-    let ctx = AppContext {
+    let _ctx = AppContext {
         db_pool: db_pool.clone(),
         kafka_producer,
         kafka_consumer,

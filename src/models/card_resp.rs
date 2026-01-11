@@ -1,8 +1,8 @@
-use derive_more::derive;
 use serde::{Deserialize, Serialize};
 
 
 #[derive(Debug, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct CardResp {
     pub transaction_type: String,
     pub amount: String,

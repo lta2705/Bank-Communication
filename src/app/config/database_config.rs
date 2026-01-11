@@ -10,6 +10,7 @@ pub struct DataBaseCfg {
     pub db_name: String,
     pub max_conn: i32,
     pub min_conn: i32,
+    #[allow(dead_code)]
     pub max_idle_conn: i32,
     pub max_life_time: i32,
     pub idle_timeout: i32,
@@ -20,14 +21,17 @@ impl DataBaseCfg {
         // Load enviroment variables
         dotenvy::dotenv().ok(); //use ok if file not exists
 
-        let get_env_var = |key: &str| env::var(key).unwrap_or_else(|_|
-            panic!("Environment variables {} was not configured", key)
-        );
+        let get_env_var = |key: &str| {
+            env::var(key)
+                .unwrap_or_else(|_| panic!("Environment variables {} was not configured", key))
+        };
 
         // Hàm helper để lấy giá trị i32 từ env
-        let get_env_i32 = |key: &str| get_env_var(key).parse::<i32>().unwrap_or_else(|_|
-            panic!("Environment variable {} was not proper integer", key)
-        );
+        let get_env_i32 = |key: &str| {
+            get_env_var(key)
+                .parse::<i32>()
+                .unwrap_or_else(|_| panic!("Environment variable {} was not proper integer", key))
+        };
 
         DataBaseCfg {
             host: get_env_var("DB_HOST"),
@@ -39,7 +43,7 @@ impl DataBaseCfg {
             min_conn: get_env_i32("DB_MIN_CONNECTIONS"),
             max_idle_conn: get_env_i32("DB_MAX_IDLE_CONNECTIONS"),
             max_life_time: get_env_i32("DB_CONNECTION_MAX_LIFETIME"),
-            idle_timeout: get_env_i32("DB_IDLE_TIMEOUT")
+            idle_timeout: get_env_i32("DB_IDLE_TIMEOUT"),
         }
     }
 }

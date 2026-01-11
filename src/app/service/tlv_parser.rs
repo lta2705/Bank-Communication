@@ -17,8 +17,9 @@ impl TlvElement {
     }
 
     /// Get value as ASCII string (if printable)
+    #[allow(dead_code)]
     pub fn value_ascii(&self) -> Option<String> {
-        if self.value.iter().all(|&b| b >= 0x20 && b <= 0x7E) {
+        if self.value.iter().all(|&b| (0x20..=0x7E).contains(&b)) {
             String::from_utf8(self.value.clone()).ok()
         } else {
             None
@@ -65,7 +66,7 @@ impl TlvParser {
     fn hex_to_bytes(hex: &str) -> Result<Vec<u8>, TlvParseError> {
         let hex = hex.trim().replace(" ", "");
 
-        if hex.len() % 2 != 0 {
+        if !hex.len().is_multiple_of(2) {
             return Err(TlvParseError::InvalidHexLength);
         }
 
@@ -211,10 +212,12 @@ impl TlvParser {
 }
 
 /// Common EMV tags with their descriptions
+#[allow(dead_code)]
 pub struct EmvTags;
 
 impl EmvTags {
     /// Get description for a known EMV tag
+    #[allow(dead_code)]
     pub fn get_description(tag: &str) -> &'static str {
         match tag {
             "4F" => "Application Identifier (AID)",
@@ -273,6 +276,7 @@ impl EmvTags {
 #[derive(Debug, Clone)]
 pub struct ParsedEmvData {
     pub elements: HashMap<String, TlvElement>,
+    #[allow(dead_code)]
     pub ordered_elements: Vec<TlvElement>,
 }
 
@@ -292,7 +296,13 @@ impl ParsedEmvData {
         self.elements.get("5A").map(|e| e.value_bcd())
     }
 
+    /// Get value by tag as hex string
+    pub fn get_value(&self, tag: &str) -> Option<String> {
+        self.elements.get(tag).map(|e| e.value_hex())
+    }
+
     /// Get Cardholder Name - Tag 5F20
+    #[allow(dead_code)]
     pub fn get_cardholder_name(&self) -> Option<String> {
         self.elements.get("5F20").and_then(|e| e.value_ascii())
     }
@@ -308,21 +318,25 @@ impl ParsedEmvData {
     }
 
     /// Get Amount Authorized - Tag 9F02
+    #[allow(dead_code)]
     pub fn get_amount(&self) -> Option<String> {
         self.elements.get("9F02").map(|e| e.value_bcd())
     }
 
     /// Get Transaction Date - Tag 9A (YYMMDD)
+    #[allow(dead_code)]
     pub fn get_transaction_date(&self) -> Option<String> {
         self.elements.get("9A").map(|e| e.value_bcd())
     }
 
     /// Get Transaction Time - Tag 9F21 (HHMMSS)
+    #[allow(dead_code)]
     pub fn get_transaction_time(&self) -> Option<String> {
         self.elements.get("9F21").map(|e| e.value_bcd())
     }
 
     /// Get Transaction Type - Tag 9C
+    #[allow(dead_code)]
     pub fn get_transaction_type(&self) -> Option<u8> {
         self.elements
             .get("9C")
@@ -330,38 +344,46 @@ impl ParsedEmvData {
     }
 
     /// Get Currency Code - Tag 5F2A
+    #[allow(dead_code)]
     pub fn get_currency_code(&self) -> Option<String> {
         self.elements.get("5F2A").map(|e| e.value_bcd())
     }
 
     /// Get Application Transaction Counter - Tag 9F36
+    #[allow(dead_code)]
     pub fn get_atc(&self) -> Option<String> {
         self.elements.get("9F36").map(|e| e.value_hex())
     }
 
     /// Get Issuer Application Data - Tag 9F10
+    #[allow(dead_code)]
     pub fn get_iad(&self) -> Option<String> {
         self.elements.get("9F10").map(|e| e.value_hex())
     }
 
     /// Get Terminal ID - Tag 9F1E
+    #[allow(dead_code)]
     pub fn get_terminal_id(&self) -> Option<String> {
         self.elements.get("9F1E").and_then(|e| e.value_ascii())
     }
 
     /// Get a specific tag value as hex
+    #[allow(dead_code)]
     pub fn get_tag_hex(&self, tag: &str) -> Option<String> {
         self.elements.get(tag).map(|e| e.value_hex())
     }
 
     /// Get a specific tag value as ASCII
+    #[allow(dead_code)]
     pub fn get_tag_ascii(&self, tag: &str) -> Option<String> {
         self.elements.get(tag).and_then(|e| e.value_ascii())
     }
 
     /// Print all parsed elements with descriptions
+    #[allow(dead_code)]
     pub fn print_summary(&self) {
         info!("=== Parsed EMV Data Summary ===");
+        info!("summary, {:?}", &self.elements);
         for elem in &self.ordered_elements {
             let desc = EmvTags::get_description(&elem.tag);
             info!(
@@ -378,6 +400,7 @@ impl ParsedEmvData {
 
 /// Errors that can occur during TLV parsing
 #[derive(Debug)]
+#[allow(dead_code)]
 pub enum TlvParseError {
     InvalidHexLength,
     InvalidHexChar(String),

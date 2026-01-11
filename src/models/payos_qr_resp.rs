@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+#[allow(dead_code)]
 pub enum PaymentLinkStatus {
     Pending,
     Cancelled,
@@ -14,6 +15,7 @@ pub enum PaymentLinkStatus {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[allow(dead_code)]
 pub struct PayOsPaymentData {
     pub bin: String,
     pub account_number: String,
@@ -23,7 +25,7 @@ pub struct PayOsPaymentData {
     pub amount: i64,
     pub description: String,
     pub order_code: i64,
-    pub expired_at: i64,
+    pub expired_at: Option<i64>,
     pub status: PaymentLinkStatus,
     pub checkout_url: String,
     pub qr_code: String,
@@ -31,9 +33,10 @@ pub struct PayOsPaymentData {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[allow(dead_code)]
 pub struct PayOsPaymentResponse {
     pub code: String,
     pub desc: String,
-    pub data: PayOsPaymentData,
+    pub data: Option<PayOsPaymentData>,
     pub signature: String,
 }
