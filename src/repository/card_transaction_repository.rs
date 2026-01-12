@@ -175,4 +175,19 @@ impl TransactionRepository {
 
         Ok(result)
     }
+    
+    pub async fn find_by_transaction_id_and_trm_id(&self,transaction_id: String, trm_id: String) 
+    -> Result<Option<Iso8583Transaction>, sqlx::Error> {
+        let result = sqlx::query_as::<_, Iso8583Transaction>(
+            r#"SELECT * FROM iso8583_payment
+            WHERE tr_uniq_no = $1 AND trm_id = $2
+            "#,
+        )
+        .bind(transaction_id)
+        .bind(trm_id)
+        .fetch_optional(&self.pool)
+        .await?;
+        
+        Ok(result)
+    }
 }
