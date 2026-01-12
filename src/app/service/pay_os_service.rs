@@ -2,15 +2,15 @@ use hmac::{Hmac, Mac};
 use sha2::Sha256;
 use std::env;
 use tracing::{error, info};
-
-use reqwest::Client;
-use serde_json;
-
 use crate::{
     app::error::AppError,
     dto::{qr_req_dto::QrReqDto, qr_resp_dto::QrRespDto},
     models::{payos_qr_req::PayOsQrReq, payos_qr_resp::PayOsPaymentResponse},
 };
+use reqwest::Client;
+use serde_json;
+use sqlx::PgPool;
+use crate::repository::qr_transaction_repository::QrTransactionRepository;
 
 pub struct PayOsQrService {
     client: Client,
@@ -18,10 +18,14 @@ pub struct PayOsQrService {
     client_id: String,
     return_url: String,
     checksum_key: String,
+    payment_url: String,
+    qr_transaction_repository: QrTransactionRepository,
 }
 
 impl PayOsQrService {
-    pub fn new() -> Self {
+    pub fn new(pg_pool: PgPool) -> Self {
+        let transaction_repo = QrTransactionRepository::new(pg_pool);
+
         PayOsQrService {
             client: Client::builder()
                 .timeout(std::time::Duration::from_secs(10))
@@ -31,6 +35,8 @@ impl PayOsQrService {
             client_id: env::var("X_CLIENT_ID").expect("X_CLIENT_ID must be set"),
             return_url: env::var("RETURN_URL").expect("RETURN_URL must be set"),
             checksum_key: env::var("CHECKSUM_KEY").expect("CHECKSUM_KEY must be set"),
+            payment_url: env::var("PAYMENT_URL").expect("PAYMENT_URL must be set"),
+            qr_transaction_repository,
         }
     }
 
@@ -42,9 +48,10 @@ impl PayOsQrService {
 
         info!(
             transaction_id = %payload.transaction_id,
-            amount = payload.amount,
-            "Mapping essential fields"
+            amount = payload.amount
         );
+
+        &self.qr_transaction_repository.
 
         // 2. Parse orderCode ONCE (không random, không parse lại)
         let order_code: i32 = payload
@@ -93,7 +100,7 @@ impl PayOsQrService {
         info!("Body created {:?}", body_json);
         let resp = self
             .client
-            .post("https://api-merchant.payos.vn/v2/payment-requests")
+            .post(&self.payment_url)
             .header("x-client-id", self.client_id.as_str())
             .header("x-api-key", self.api_key.as_str())
             .header("content-type", "application/json")
@@ -157,6 +164,55 @@ impl PayOsQrService {
 
         info!("Mapped payload success: {:?}", response_dto);
         Ok(response_dto)
+    }
+
+    pub async fn cancel_qr(&self, payload: QrReqDto) -> Result<QrRespDto, AppError> {
+        let id = payload.transaction_id.clone();
+        let description = "Change my mind".to_string();
+
+        let body_json =
+            serde_json::to_string(&description).map_err(|e| AppError::Config(e.to_string()))?;
+
+        let path = format!("{}{}", id.as_str(), "/cancel");
+        let cancel_url = format!("{}{}", &self.payment_url, path.as_str());
+
+        let resp = self
+            .client
+            .post(cancel_url)
+            .header("x-client-id", self.client_id.as_str())
+            .header("x-api-key", self.api_key.as_str())
+            .body(description)
+            .send()
+            .await
+            .map_err(AppError::Http)?;
+
+        let status = resp.status();
+        let body = resp.text().await.map_err(AppError::Http)?;
+        if !status.is_success() {
+            error!(
+                status = %status,
+                "PayOS returned error"
+            );
+            return Err(AppError::ExternalService(body));
+        }
+
+        let cancel_resp: PayOsPaymentResponse = match serde_json::from_str(&body) {
+            Ok(v) => v,
+            Err(e) => {
+                error!("Serde Parse Error: {} | Raw Body: {}", e, body);
+                return Err(AppError::Config(format!("Parse PayOS JSON failed: {}", e)));
+            }
+        };
+
+        let cancel_resp_dto = QrRespDto {
+            response_code: cancel_resp.code,
+            qr_code: "".to_string(),
+            transaction_id: cancel_resp.data.unwrap().order_code.to_string(),
+            pc_pos_id: payload.pc_pos_id,
+        };
+
+        info!("Mapped payload success: {:?}", cancel_resp_dto);
+        Ok(cancel_resp_dto)
     }
 }
 

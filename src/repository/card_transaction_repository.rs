@@ -3,11 +3,11 @@ use chrono::Local;
 use sqlx::PgPool;
 
 /// Transaction Repository for database operations
-pub struct TransactionRepository {
+pub struct CardTransactionRepository {
     pub pool: PgPool,
 }
 
-impl TransactionRepository {
+impl CardTransactionRepository {
     pub fn new(pool: PgPool) -> Self {
         Self { pool }
     }

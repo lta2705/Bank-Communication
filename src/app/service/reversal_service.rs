@@ -1,7 +1,7 @@
 use crate::app::service::stan_generator::StanGenerator;
 use crate::models::iso8583_message::Iso8583Message;
 use crate::models::transaction::{Iso8583Transaction, TransactionState};
-use crate::repository::card_transaction_repository::TransactionRepository;
+use crate::repository::card_transaction_repository::CardTransactionRepository;
 use chrono::Local;
 use std::sync::Arc;
 
@@ -9,13 +9,13 @@ use std::sync::Arc;
 /// Handles transaction reversals (0400 messages)
 pub struct ReversalService {
     stan_generator: Arc<StanGenerator>,
-    transaction_repo: Arc<TransactionRepository>,
+    transaction_repo: Arc<CardTransactionRepository>,
 }
 
 impl ReversalService {
     pub fn new(
         stan_generator: Arc<StanGenerator>,
-        transaction_repo: Arc<TransactionRepository>,
+        transaction_repo: Arc<CardTransactionRepository>,
     ) -> Self {
         Self {
             stan_generator,

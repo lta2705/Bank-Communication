@@ -49,7 +49,7 @@ impl TransactionState {
 pub struct Iso8583Transaction {
     pub tr_dt: String,               // Transaction date YYYYMMDD
     pub tr_tm: String,               // Transaction time HHMMSS
-    pub tr_uniq_no: String,          // Unique transaction number (STAN)
+    pub tr_uniq_no: Option<String>,  // Unique transaction number (STAN)
     pub trm_id: Option<String>,      // Terminal ID
     pub msg_typ: Option<String>,     // Message Type (MTI)
     pub inst_trm_id: Option<String>, // Institution Terminal ID
@@ -107,7 +107,7 @@ impl Iso8583Transaction {
         Self {
             tr_dt: now.format("%Y%m%d").to_string(),
             tr_tm: now.format("%H%M%S").to_string(),
-            tr_uniq_no: stan.to_string(),
+            tr_uniq_no: None,
             trm_id: None,
             msg_typ: Some(mti.to_string()),
             inst_trm_id: None,

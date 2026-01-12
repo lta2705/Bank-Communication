@@ -10,14 +10,14 @@ use crate::app::service::tlv_parser::ParsedEmvData;
 use crate::models::card_request::CardRequest;
 use crate::models::iso8583_message::Iso8583Message;
 use crate::models::transaction::{Iso8583Transaction, TransactionState};
-use crate::repository::card_transaction_repository::TransactionRepository;
+use crate::repository::card_transaction_repository::CardTransactionRepository;
 use chrono::Local;
 
 /// ISO8583 Transaction Service
 /// Handles complete transaction lifecycle from request to response
 pub struct Iso8583TransactionService {
     stan_generator: Arc<StanGenerator>,
-    transaction_repo: Arc<TransactionRepository>,
+    transaction_repo: Arc<CardTransactionRepository>,
     mock_bank_handler: MockBankResponseHandler,
     mac_calculator: MacCalculator,
 }
@@ -25,7 +25,7 @@ pub struct Iso8583TransactionService {
 impl Iso8583TransactionService {
     pub fn new(
         stan_generator: Arc<StanGenerator>,
-        transaction_repo: Arc<TransactionRepository>,
+        transaction_repo: Arc<CardTransactionRepository>,
     ) -> Self {
         Self {
             stan_generator,
@@ -222,6 +222,10 @@ impl Iso8583TransactionService {
 
         // Set terminal ID from card request
         db_tx.trm_id = Some(card_request.trm_id.clone());
+        
+        db_tx.tr_uniq_no = Some(card_request.transaction_id.clone());
+        
+        // db_tx.transaction
 
         // Set bitmap
         db_tx.field_001 = Some(msg.bitmap.clone());
@@ -253,29 +257,5 @@ impl Iso8583TransactionService {
             "amount": request.amount,
             "timestamp": Local::now().to_rfc3339(),
         })
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn create_test_card_request() -> CardRequest {
-        CardRequest {
-            msg_type: "SALE".to_string(),
-            trm_id: "TERM0001".to_string(),
-            transaction_id: "TX12345".to_string(),
-            amount: 100.50,
-            merchant_id: Some("MERCHANT001".to_string()),
-            card_data: None,
-            qr_data: None,
-            additional_data: None,
-        }
-    }
-
-    #[test]
-    fn test_build_iso_message() {
-        // This test requires proper setup
-        // For now, just test the structure
     }
 }

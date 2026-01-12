@@ -7,7 +7,7 @@ use crate::app::service::iso8583_transaction_service::Iso8583TransactionService;
 use crate::app::service::stan_generator::StanGenerator;
 use crate::app::service::tlv_parser::ParsedEmvData;
 use crate::models::card_request::CardRequest;
-use crate::repository::card_transaction_repository::TransactionRepository;
+use crate::repository::card_transaction_repository::CardTransactionRepository;
 use sqlx::PgPool;
 
 // Global service instances (to be initialized in builder)
@@ -19,7 +19,7 @@ lazy_static::lazy_static! {
 /// Initialize the transaction service (call this from builder)
 pub async fn init_service(db_pool: Arc<PgPool>) {
     let stan_generator = Arc::new(StanGenerator::new());
-    let transaction_repo = Arc::new(TransactionRepository::new((*db_pool).clone()));
+    let transaction_repo = Arc::new(CardTransactionRepository::new((*db_pool).clone()));
     let service = Arc::new(Iso8583TransactionService::new(
         stan_generator,
         transaction_repo,
