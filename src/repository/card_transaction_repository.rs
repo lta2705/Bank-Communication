@@ -98,7 +98,7 @@ impl CardTransactionRepository {
         &self,
         tr_dt: &str,
         tr_tm: &str,
-        tr_uniq_no: &str,
+        tr_uniq_no: &Option<String>,
         response_code: Option<&str>,
         auth_code: Option<&str>,
         rrn: Option<&str>,

@@ -1,16 +1,16 @@
-use hmac::{Hmac, Mac};
-use sha2::Sha256;
-use std::env;
-use tracing::{error, info};
+use crate::repository::qr_transaction_repository::QrTransactionRepository;
 use crate::{
     app::error::AppError,
     dto::{qr_req_dto::QrReqDto, qr_resp_dto::QrRespDto},
     models::{payos_qr_req::PayOsQrReq, payos_qr_resp::PayOsPaymentResponse},
 };
+use hmac::{Hmac, Mac};
 use reqwest::Client;
 use serde_json;
+use sha2::Sha256;
 use sqlx::PgPool;
-use crate::repository::qr_transaction_repository::QrTransactionRepository;
+use std::env;
+use tracing::{error, info};
 
 pub struct PayOsQrService {
     client: Client,
@@ -51,9 +51,15 @@ impl PayOsQrService {
             amount = payload.amount
         );
 
-        &self.qr_transaction_repository.
+        let temp_txn = &self
+            .qr_transaction_repository
+            .find_by_order_code_and_trm_id(payload.transaction_id.parse()?, &payload.terminal_id)
+            .await?;
 
-        // 2. Parse orderCode ONCE (không random, không parse lại)
+        if temp_txn.is_some() {
+            return Err(AppError::Validation("Transaction ID already exists".into()));
+        }
+
         let order_code: i32 = payload
             .transaction_id
             .parse()
@@ -86,6 +92,12 @@ impl PayOsQrService {
         model.return_url = return_url.to_string();
         model.cancel_url = cancel_url.to_string();
         model.signature = signature;
+
+        &self
+            .qr_transaction_repository
+            .insert(model.clone())
+            .await
+            .map_err(AppError::Database)?;
 
         info!(
             order_code = model.order_code,

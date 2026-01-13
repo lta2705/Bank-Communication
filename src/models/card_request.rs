@@ -8,6 +8,7 @@ pub struct CardRequest {
     pub trm_id: String,
     pub transaction_id: String,
     pub amount: f64,
+    pub transaction_type: String,
     #[serde(default)]
     pub merchant_id: Option<String>,
     #[serde(default)]

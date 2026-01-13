@@ -12,6 +12,7 @@ use crate::models::iso8583_message::Iso8583Message;
 use crate::models::transaction::{Iso8583Transaction, TransactionState};
 use crate::repository::card_transaction_repository::CardTransactionRepository;
 use chrono::Local;
+use syn::parse::Parser;
 
 /// ISO8583 Transaction Service
 /// Handles complete transaction lifecycle from request to response
@@ -126,12 +127,19 @@ impl Iso8583TransactionService {
         card_request: &CardRequest,
         stan: &str,
     ) -> Result<Iso8583Message, io::Error> {
-        let mut msg = Iso8583Message::new("0200"); // Financial request
+        // let mti = match card_request.transaction_type.as_str() {
+        //     "SALE" => "0200",
+        //     "VOID" => "0200",
+        //     "REVERSAL" => "0400",
+        //     "SETTLEMENT" => "0500",
+        //     _ => "0000"
+        // };
+        let mut msg = Iso8583Message::new("0200");
 
         let now = Local::now();
 
         // DE3: Processing Code (based on transaction type)
-        let processing_code = match card_request.msg_type.as_str() {
+        let processing_code = match card_request.transaction_type.as_str() {
             "SALE" | "PURCHASE" => "000000",
             "CASH_WITHDRAWAL" => "010000",
             "BALANCE_INQUIRY" => "310000",
@@ -222,9 +230,9 @@ impl Iso8583TransactionService {
 
         // Set terminal ID from card request
         db_tx.trm_id = Some(card_request.trm_id.clone());
-        
+
         db_tx.tr_uniq_no = Some(card_request.transaction_id.clone());
-        
+
         // db_tx.transaction
 
         // Set bitmap

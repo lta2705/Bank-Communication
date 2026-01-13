@@ -29,8 +29,12 @@ async fn main() -> std::io::Result<()> {
         }
     });
 
+    let db_pool = app::utils::database::establish_db_conn()
+        .await
+        .expect("Failed to establish database connection");
+
     // 1. Khởi tạo service
-    let qr_service = PayOsQrService::new();
+    let qr_service = PayOsQrService::new(db_pool.clone());
     let qr_service_data = web::Data::new(qr_service);
 
     let http_server = HttpServer::new(move || {
