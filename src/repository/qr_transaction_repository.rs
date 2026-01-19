@@ -1,7 +1,11 @@
+use chrono::Utc;
 use sqlx::PgPool;
 
-use crate::{app::error::AppError, models::{payos_qr_req::PayOsQrReq, payos_qr_resp::PayOsPaymentResponse}};
 use crate::models::transaction::Iso8583Transaction;
+use crate::{
+    app::error::AppError,
+    models::{payos_qr_req::PayOsQrReq, payos_qr_resp::PayOsPaymentResponse},
+};
 
 pub struct QrTransactionRepository {
     pub pool: PgPool,
@@ -13,16 +17,21 @@ impl QrTransactionRepository {
     }
 
     pub async fn insert(&self, qr_txn: PayOsQrReq) -> Result<(), sqlx::Error> {
+        let now = Utc::now();
+        let tr_dt = now.format("%Y%m%d").to_string();
+        let tr_tm = now.format("%H%M%S").to_string();
         sqlx::query(
             r#"
             INSERT INTO iso8583_payment (
-                field004, tr_uniq_no, field048, field064, field037
+               tr_dt, tr_tm, field_004, tr_uniq_no, field_048, field_064, field_037
             )
-            VALUES ($1, $2, $3, $4)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
             "#,
         )
+            .bind(tr_dt)
+            .bind(tr_tm)
             .bind(qr_txn.amount)
-            .bind(qr_txn.order_code)
+            .bind(qr_txn.order_code.to_string())
             .bind(qr_txn.description)
             .bind(qr_txn.signature)
             .bind(qr_txn.order_code)
@@ -32,12 +41,18 @@ impl QrTransactionRepository {
         Ok(())
     }
 
-    pub async fn find_by_order_code_and_trm_id(&self, order_code: i32, trm_id: &str) -> Result<Option<Iso8583Transaction>, AppError> {
-        let result = sqlx::query_as::<_, Iso8583Transaction>(
+    pub async fn find_by_order_code(&self, order_code: i32) -> Result<bool, AppError> {
+        let result: Option<(i32,)> = sqlx::query_as(
             r#"
-                SELECT * FROM iso8583_payment
-                WHERE order_code = $1 AND trm_id = $2
-"#, 
+                SELECT 1 FROM iso8583_payment
+                WHERE tr_uniq_no = $1
+                LIMIT 1
+            "#,
         )
+        .bind(order_code.to_string())
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(result.is_some())
     }
 }

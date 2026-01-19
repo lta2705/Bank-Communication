@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 /// ----------------------
 /// Item
 /// ----------------------
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PayOsItem {
     pub name: String,
@@ -41,7 +41,7 @@ pub enum PayOsTaxPercent {
 /// ----------------------
 /// QR Request
 /// ----------------------
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct PayOsQrReq {
     pub order_code: i32,
@@ -81,6 +81,7 @@ pub struct PayOsQrReq {
 
     pub signature: String,
 }
+
 impl PayOsQrReq {
     pub fn new() -> Self {
         PayOsQrReq {

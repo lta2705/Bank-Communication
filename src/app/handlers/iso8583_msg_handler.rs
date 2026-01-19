@@ -9,6 +9,7 @@ use crate::app::service::tlv_parser::ParsedEmvData;
 use crate::models::card_request::CardRequest;
 use crate::repository::card_transaction_repository::CardTransactionRepository;
 use sqlx::PgPool;
+use crate::models::app_context::AppContext;
 
 // Global service instances (to be initialized in builder)
 lazy_static::lazy_static! {
@@ -17,12 +18,13 @@ lazy_static::lazy_static! {
 }
 
 /// Initialize the transaction service (call this from builder)
-pub async fn init_service(db_pool: Arc<PgPool>) {
+pub async fn init_service(db_pool: Arc<PgPool>, ctx: Arc<AppContext>) {
     let stan_generator = Arc::new(StanGenerator::new());
     let transaction_repo = Arc::new(CardTransactionRepository::new((*db_pool).clone()));
     let service = Arc::new(Iso8583TransactionService::new(
         stan_generator,
         transaction_repo,
+        ctx,
     ));
 
     let _ = TRANSACTION_SERVICE.set(service);

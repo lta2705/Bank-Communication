@@ -7,12 +7,13 @@ use crate::app::security::mac_calculator::MacCalculator;
 use crate::app::service::response_handler::{MockBankResponseHandler, ResponseHandler};
 use crate::app::service::stan_generator::StanGenerator;
 use crate::app::service::tlv_parser::ParsedEmvData;
+use crate::app::utils::kafka_message_sender::KafkaMessageSender;
+use crate::models::app_context::AppContext;
 use crate::models::card_request::CardRequest;
 use crate::models::iso8583_message::Iso8583Message;
 use crate::models::transaction::{Iso8583Transaction, TransactionState};
 use crate::repository::card_transaction_repository::CardTransactionRepository;
 use chrono::Local;
-use syn::parse::Parser;
 
 /// ISO8583 Transaction Service
 /// Handles complete transaction lifecycle from request to response
@@ -21,18 +22,21 @@ pub struct Iso8583TransactionService {
     transaction_repo: Arc<CardTransactionRepository>,
     mock_bank_handler: MockBankResponseHandler,
     mac_calculator: MacCalculator,
+    kafka_sender: Arc<KafkaMessageSender>,
 }
 
 impl Iso8583TransactionService {
     pub fn new(
         stan_generator: Arc<StanGenerator>,
         transaction_repo: Arc<CardTransactionRepository>,
+        ctx: Arc<AppContext>,
     ) -> Self {
         Self {
             stan_generator,
             transaction_repo,
             mock_bank_handler: MockBankResponseHandler::default_mock(),
             mac_calculator: MacCalculator::new_mock(),
+            kafka_sender: Arc::new(KafkaMessageSender::new(ctx.kafka_producer.clone())),
         }
     }
 
@@ -68,12 +72,22 @@ impl Iso8583TransactionService {
 
         info!("Transaction saved to database: STAN={}", stan);
 
+        let tr_uniq_no = match db_transaction.tr_uniq_no {
+            Some(tr_uniq_no) => tr_uniq_no,
+            None => {
+                return Err(io::Error::new(
+                    io::ErrorKind::Other,
+                    "Missing transaction unique number",
+                ));
+            }
+        };
+
         // Update state to SENT
         self.transaction_repo
             .update_response(
                 &db_transaction.tr_dt,
                 &db_transaction.tr_tm,
-                &db_transaction.tr_uniq_no,
+                tr_uniq_no.as_str(),
                 None,
                 None,
                 None,
@@ -104,7 +118,7 @@ impl Iso8583TransactionService {
             .update_response(
                 &db_transaction.tr_dt,
                 &db_transaction.tr_tm,
-                &db_transaction.tr_uniq_no,
+                tr_uniq_no.as_str(),
                 response_code_str,
                 auth_code,
                 rrn,
@@ -115,6 +129,21 @@ impl Iso8583TransactionService {
 
         // 7. Build response JSON
         let response_json = self.build_response_json(card_request, &response_msg, &stan, &state);
+
+        // 8. Send to Kafka
+        info!("Sending ISO8583 transaction response to Kafka...");
+        if let Err(e) = self
+            .kafka_sender
+            .send(
+                "payment_notifications",
+                format!("CARD_{}", card_request.transaction_id).as_str(),
+                &response_json,
+            )
+            .await
+        {
+            error!("Failed to send ISO8583 response to Kafka: {}", e);
+            // Don't fail the transaction if Kafka send fails, just log it
+        }
 
         info!("Transaction completed: STAN={}, State={:?}", stan, state);
 
@@ -255,6 +284,7 @@ impl Iso8583TransactionService {
         serde_json::json!({
             "status": if is_approved { "APPROVED" } else { "DECLINED" },
             "transactionId": request.transaction_id,
+            "transactionType": request.transaction_type,
             "terminalId": request.trm_id,
             "stan": stan,
             "responseCode": response_msg.get_field(39),

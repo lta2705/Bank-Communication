@@ -7,7 +7,7 @@ pub struct QrRespDto {
     pub response_code: String,
     pub qr_code: String,
     pub transaction_id: String,
-    pub pc_pos_id: String
+    pub pc_pos_id: String,
 }
 
 impl QrRespDto {
@@ -17,7 +17,7 @@ impl QrRespDto {
             response_code: String::new(), 
             qr_code: String::new(), 
             transaction_id: String::new(), 
-            pc_pos_id: String::new() 
+            pc_pos_id: String::new(),
         }
     }
     

@@ -6,7 +6,10 @@ mod repository;
 use std::env;
 use std::sync::Arc;
 
+use crate::app::config::kafka_config::KafkaConfig;
 use crate::app::handlers::pay_os_qr_handler::index;
+use crate::app::service::pay_os_service::PayOsConfig;
+use crate::app::utils::kafka_producer::create_producer;
 use crate::app::{handlers::pay_os_qr_handler::create_qr, service::pay_os_service::PayOsQrService};
 use actix_web::{App, HttpServer, web};
 use app::builder::builder::run;
@@ -14,7 +17,7 @@ use app::utils::logging::setup_tracing;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    setup_tracing().expect("Failed to setup tracing");
+    let _log_guard = setup_tracing().expect("Failed to setup tracing");
     dotenvy::dotenv().ok();
 
     let host = env::var("APP_HOST").unwrap_or_else(|_| "0.0.0.0".to_string());
@@ -33,8 +36,15 @@ async fn main() -> std::io::Result<()> {
         .await
         .expect("Failed to establish database connection");
 
-    // 1. Khởi tạo service
-    let qr_service = PayOsQrService::new(db_pool.clone());
+    // Initialize Kafka producer for PayOS service
+    let kafka_cfg = KafkaConfig::from_env().expect("Failed to load Kafka config");
+    let kafka_producer =
+        Arc::new(create_producer(&kafka_cfg).expect("Failed to create Kafka producer"));
+
+    let payos_config = PayOsConfig::from_env();
+    let config_arc = Arc::new(payos_config);
+    // 1. Khởi tạo service with Kafka producer
+    let qr_service = PayOsQrService::new(db_pool.clone(), config_arc.clone(), kafka_producer);
     let qr_service_data = web::Data::new(qr_service);
 
     let http_server = HttpServer::new(move || {

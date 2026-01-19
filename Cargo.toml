@@ -44,6 +44,6 @@ native-tls = { version = "0.2", features = ["vendored"] }
 bon = "3.8.1"
 derive_more = "2.1.1"
 once_cell = "1.19"
-reqwest = "0.13.1"
+reqwest = { version = "0.12", features = ["json"] }
 hmac = "0.12"
 sha2 = "0.10"

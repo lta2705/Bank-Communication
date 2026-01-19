@@ -64,7 +64,7 @@ impl ReversalService {
 
         // DE90: Original Data Elements (OMMDDHHMMSS + original STAN + original MTI)
         let original_data = format!(
-            "{}{}{}",
+            "{}{}{:?}",
             original_tx.field_013.as_deref().unwrap_or("0000"),
             original_tx.field_012.as_deref().unwrap_or("000000"),
             original_tx.tr_uniq_no
@@ -75,7 +75,7 @@ impl ReversalService {
         reversal.set_field(56, reason_code.as_code().to_string());
 
         tracing::info!(
-            "Created reversal message: Original STAN={}, Reversal STAN={}, Reason={}",
+            "Created reversal message: Original STAN={:?}, Reversal STAN={:?}, Reason={:?}",
             original_tx.tr_uniq_no,
             reversal_stan,
             reason_code.description()

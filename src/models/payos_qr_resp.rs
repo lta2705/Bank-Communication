@@ -13,7 +13,7 @@ pub enum PaymentLinkStatus {
     Failed,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[allow(dead_code)]
 pub struct PayOsPaymentData {
@@ -31,7 +31,7 @@ pub struct PayOsPaymentData {
     pub qr_code: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[allow(dead_code)]
 pub struct PayOsPaymentResponse {
