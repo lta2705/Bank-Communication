@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-
+use serde::__private228::de::Content::String;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -8,6 +8,7 @@ pub struct QrRespDto {
     pub qr_code: String,
     pub transaction_id: String,
     pub pc_pos_id: String,
+    pub amount: i64,
 }
 
 impl QrRespDto {
@@ -18,6 +19,7 @@ impl QrRespDto {
             qr_code: String::new(), 
             transaction_id: String::new(), 
             pc_pos_id: String::new(),
+            amount: 0,
         }
     }
     
